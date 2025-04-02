@@ -27,6 +27,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     navigate("/login");
   };
 
+  // Extract user name from metadata with fallback
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  // Get first letter for avatar with fallback
+  const userInitial = userName.charAt(0).toUpperCase();
+
   const navigationItems = [
     {
       name: "Dashboard",
@@ -98,10 +103,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="p-4 border-t">
             <div className="flex items-center mb-4">
               <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
-                {user?.name.charAt(0)}
+                {userInitial}
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-sm font-medium">{userName}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
             </div>
