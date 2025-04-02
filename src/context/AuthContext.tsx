@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "../components/ui/use-toast";
-import { supabase } from "../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -34,25 +34,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       setLoading(true);
       
-      // Get initial session
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn("Supabase is not properly configured. Please set the environment variables.");
+        setLoading(false);
+        return;
+      }
       
-      // Set up auth listener
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
-      );
-      
-      setLoading(false);
-      
-      // Clean up subscription on unmount
-      return () => {
-        subscription.unsubscribe();
-      };
+      try {
+        // Get initial session
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        // Set up auth listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (_event, session) => {
+            setSession(session);
+            setUser(session?.user ?? null);
+          }
+        );
+        
+        // Clean up subscription on unmount
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     
     initializeAuth();
@@ -60,6 +71,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      if (!isSupabaseConfigured()) {
+        toast({
+          variant: "destructive",
+          title: "Configuration Error",
+          description: "Supabase is not configured. Please set the environment variables.",
+        });
+        return false;
+      }
+
       if (!email || !password) {
         toast({
           variant: "destructive",
@@ -97,6 +117,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
+      if (!isSupabaseConfigured()) {
+        toast({
+          variant: "destructive",
+          title: "Configuration Error",
+          description: "Supabase is not configured. Please set the environment variables.",
+        });
+        return false;
+      }
+
       if (!name || !email || !password) {
         toast({
           variant: "destructive",
@@ -143,7 +172,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut();
+    }
+    // Clear local user state even if Supabase is not configured
+    setUser(null);
+    setSession(null);
   };
 
   const value = {
