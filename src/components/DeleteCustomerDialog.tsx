@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -20,9 +19,14 @@ import { useToast } from "@/hooks/use-toast";
 interface DeleteCustomerDialogProps {
   customerId: string;
   customerName?: string;
+  triggerAsButton?: boolean;
 }
 
-const DeleteCustomerDialog = ({ customerId, customerName }: DeleteCustomerDialogProps) => {
+const DeleteCustomerDialog = ({ 
+  customerId, 
+  customerName, 
+  triggerAsButton = false 
+}: DeleteCustomerDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
@@ -77,12 +81,26 @@ const DeleteCustomerDialog = ({ customerId, customerName }: DeleteCustomerDialog
     }
   };
 
+  const renderTrigger = () => {
+    if (triggerAsButton) {
+      return (
+        <Button variant="ghost" size="icon">
+          <Trash2 className="h-4 w-4 text-destructive" />
+          <span className="sr-only">Delete</span>
+        </Button>
+      );
+    }
+    return (
+      <Button variant="destructive" size="sm">
+        <Trash2 className="h-4 w-4 mr-1" /> Delete
+      </Button>
+    );
+  };
+
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          <Trash2 className="h-4 w-4 mr-1" /> Delete
-        </Button>
+        {renderTrigger()}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

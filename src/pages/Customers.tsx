@@ -129,10 +129,11 @@ const Customers = () => {
                             <span className="sr-only">Edit</span>
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                          <DeleteCustomerDialog customerId={customer.custno} customerName={customer.custname} />
-                          <span className="sr-only">Delete</span>
-                        </Button>
+                        <DeleteCustomerDialog 
+                          customerId={customer.custno} 
+                          customerName={customer.custname} 
+                          triggerAsButton 
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
