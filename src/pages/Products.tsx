@@ -55,8 +55,8 @@ interface Product {
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [stockFilter, setStockFilter] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [stockFilter, setStockFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name-asc");
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,9 @@ const Products = () => {
 
         // Transform the data to match our Product interface
         const transformedProducts = data.map(product => ({
-          ...product,
+          prodcode: product.prodcode,
+          description: product.description || 'Unnamed Product',
+          unit: product.unit || 'N/A',
           name: product.description || 'Unnamed Product', // Use description as name
           stock: 0, // Default stock value
           price: 0, // Default price value
@@ -112,7 +114,7 @@ const Products = () => {
         (product.prodcode?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
         (product.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
       
-      const matchesCategory = categoryFilter ? product.category === categoryFilter : true;
+      const matchesCategory = categoryFilter === "all" ? true : product.category === categoryFilter;
       
       let matchesStock = true;
       if (stockFilter === "low") {
@@ -196,7 +198,7 @@ const Products = () => {
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
@@ -213,7 +215,7 @@ const Products = () => {
                         <SelectValue placeholder="Stock Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Stock Levels</SelectItem>
+                        <SelectItem value="all">All Stock Levels</SelectItem>
                         <SelectItem value="in">In Stock</SelectItem>
                         <SelectItem value="low">Low Stock</SelectItem>
                         <SelectItem value="out">Out of Stock</SelectItem>
@@ -293,11 +295,11 @@ const Products = () => {
                   <Package className="h-10 w-10 text-muted-foreground mb-4" />
                   <h3 className="font-semibold text-lg">No products found</h3>
                   <p className="text-muted-foreground mb-4">
-                    {searchTerm || categoryFilter || stockFilter
+                    {searchTerm || categoryFilter !== "all" || stockFilter !== "all"
                       ? "Try adjusting your search or filters"
                       : "Get started by adding your first product"}
                   </p>
-                  {!searchTerm && !categoryFilter && !stockFilter && (
+                  {!searchTerm && categoryFilter === "all" && stockFilter === "all" && (
                     <Link to="/products/add">
                       <Button>
                         <Plus className="mr-2 h-4 w-4" />
