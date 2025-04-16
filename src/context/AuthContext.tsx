@@ -42,18 +42,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       try {
-        // Get initial session
+        // Set up auth listener FIRST to prevent missing auth events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (_event, currentSession) => {
+            setSession(currentSession);
+            setUser(currentSession?.user ?? null);
+          }
+        );
+        
+        // THEN check for existing session
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
-        
-        // Set up auth listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-          }
-        );
         
         // Clean up subscription on unmount
         return () => {
@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -154,18 +154,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      toast({
-        title: "Account created",
-        description: "Please check your email to confirm your account",
-      });
+      // Check if email confirmation is required
+      if (data?.user && data?.session) {
+        // Session exists, so email confirmation is not required or already confirmed
+        toast({
+          title: "Account created",
+          description: "Your account has been successfully created",
+        });
+      } else {
+        // No session means confirmation is required
+        toast({
+          title: "Account created",
+          description: "Please check your email to confirm your account",
+        });
+      }
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error);
       toast({
         variant: "destructive",
         title: "Signup failed",
-        description: "Could not create account",
+        description: error.message || "Could not create account",
       });
       return false;
     }
