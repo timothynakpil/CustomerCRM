@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
-  Package, 
+  Users,
   LogOut, 
   Menu, 
   X
@@ -39,9 +39,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      name: "Products",
-      path: "/products",
-      icon: <Package className="h-5 w-5" />,
+      name: "Customers",
+      path: "/customers",
+      icon: <Users className="h-5 w-5" />,
     },
   ];
 
@@ -77,7 +77,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-center h-16 border-b">
             <Link to="/dashboard" className="text-xl font-bold text-primary">
-              ManageO
+              CustomerCRM
             </Link>
           </div>
           
