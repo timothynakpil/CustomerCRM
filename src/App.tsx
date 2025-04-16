@@ -15,6 +15,7 @@ import ProductDetail from "./pages/ProductDetail";
 import AddProduct from "./pages/AddProduct";
 import EditProduct from "./pages/EditProduct";
 import Customers from "./pages/Customers";
+import CustomerDetail from "./pages/CustomerDetail";
 import NotFound from "./pages/NotFound";
 
 // Create a new QueryClient instance
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/products/add" element={<AddProduct />} />
                 <Route path="/products/edit/:id" element={<EditProduct />} />
                 <Route path="/customers" element={<Customers />} />
+                <Route path="/customers/:id" element={<CustomerDetail />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
