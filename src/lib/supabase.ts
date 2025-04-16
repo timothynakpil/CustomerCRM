@@ -13,7 +13,9 @@ export const isSupabaseConfigured = () => {
   return (
     supabaseUrl !== undefined &&
     supabaseAnonKey !== undefined &&
-    supabaseUrl !== 'https://your-project-url.supabase.co' &&
-    supabaseAnonKey !== 'your-anon-key'
+    supabaseUrl.length > 0 &&
+    supabaseAnonKey.length > 0 &&
+    !supabaseUrl.includes("your-project-url") &&
+    !supabaseAnonKey.includes("your-anon-key")
   );
 };
