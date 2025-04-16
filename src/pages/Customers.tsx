@@ -22,7 +22,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Plus, Edit, Eye } from "lucide-react";
+import { Search, Plus, Edit, Eye, Trash2 } from "lucide-react";
+import DeleteCustomerDialog from "@/components/DeleteCustomerDialog";
 
 const Customers = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,9 +79,11 @@ const Customers = () => {
                 onChange={(e) => setSearchQuery(e.target.value)} 
               />
             </div>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Customer
+            <Button asChild>
+              <Link to="/customers/add">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Customer
+              </Link>
             </Button>
           </div>
         </div>
@@ -125,6 +128,10 @@ const Customers = () => {
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
                           </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <DeleteCustomerDialog customerId={customer.custno} customerName={customer.custname} />
+                          <span className="sr-only">Delete</span>
                         </Button>
                       </div>
                     </TableCell>
