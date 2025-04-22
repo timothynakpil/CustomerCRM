@@ -17,12 +17,21 @@ import {
 } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
-// Define form schema
+// Form schema (now matches AddCustomer)
 const formSchema = z.object({
   custname: z.string().min(1, "Customer name is required"),
   address: z.string().optional(),
-  payterm: z.string().optional(),
+  payterm: z.enum(["30D", "45D", "COD"], {
+    required_error: "Payment Terms is required",
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -40,7 +49,7 @@ const EditCustomer = () => {
     defaultValues: {
       custname: "",
       address: "",
-      payterm: "",
+      payterm: undefined,
     },
   });
 
@@ -48,7 +57,6 @@ const EditCustomer = () => {
   useEffect(() => {
     const fetchCustomer = async () => {
       if (!id) return;
-      
       try {
         const { data, error } = await supabase
           .from("customer")
@@ -57,13 +65,12 @@ const EditCustomer = () => {
           .single();
 
         if (error) throw error;
-        
+
         if (data) {
-          // Populate form
           form.reset({
             custname: data.custname || "",
             address: data.address || "",
-            payterm: data.payterm || "",
+            payterm: data.payterm as "30D" | "45D" | "COD" || undefined,
           });
         }
       } catch (error) {
@@ -84,7 +91,6 @@ const EditCustomer = () => {
 
   const onSubmit = async (data: FormValues) => {
     if (!id) return;
-    
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -92,7 +98,7 @@ const EditCustomer = () => {
         .update({
           custname: data.custname,
           address: data.address || null,
-          payterm: data.payterm || null,
+          payterm: data.payterm,
         })
         .eq("custno", id);
 
@@ -102,7 +108,7 @@ const EditCustomer = () => {
         title: "Success",
         description: "Customer updated successfully",
       });
-      
+
       navigate(`/customers/${id}`);
     } catch (error) {
       console.error("Error updating customer:", error);
@@ -135,21 +141,22 @@ const EditCustomer = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Edit Customer</h1>
         </div>
-        
+
         <div className="bg-white p-6 rounded-md border">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Display only, not editable */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Customer ID</label>
-                  <Input 
-                    value={id} 
-                    disabled 
+                  <Input
+                    value={id}
+                    disabled
                     className="bg-gray-100"
                   />
                   <p className="text-sm text-gray-500">Customer ID cannot be changed</p>
                 </div>
-                
+
                 <FormField
                   control={form.control}
                   name="custname"
@@ -183,10 +190,23 @@ const EditCustomer = () => {
                   name="payterm"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Payment Terms</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter payment terms" {...field} />
-                      </FormControl>
+                      <FormLabel>Payment Terms *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isLoading}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select payment terms" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="30D">30D</SelectItem>
+                          <SelectItem value="45D">45D</SelectItem>
+                          <SelectItem value="COD">COD</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -194,8 +214,8 @@ const EditCustomer = () => {
               </div>
 
               <div className="flex justify-end space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   type="button"
                   onClick={() => navigate(`/customers/${id}`)}
                 >
