@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import DashboardLayout from "@/components/DashboardLayout";
 import DeleteCustomerDialog from "@/components/DeleteCustomerDialog";
 import { Edit, ArrowLeft, MapPin, FileText, Wallet, CalendarDays } from "lucide-react";
+import ViewTransactionDialog from "@/components/ViewTransactionDialog";
 
 const CustomerDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,7 +54,6 @@ const CustomerDetail = () => {
   const { data: payments, isLoading: isLoadingPayments } = useQuery({
     queryKey: ["customerPayments", id],
     queryFn: async () => {
-      // First get the sales transactions for this customer
       const { data: customerSales, error: salesError } = await supabase
         .from("sales")
         .select("transno")
@@ -66,10 +65,8 @@ const CustomerDetail = () => {
         return [];
       }
       
-      // Get transaction numbers
       const transactionNumbers = customerSales.map(sale => sale.transno);
       
-      // Then get payments for those transactions
       const { data: paymentData, error: paymentError } = await supabase
         .from("payment")
         .select("*")
@@ -236,6 +233,7 @@ const CustomerDetail = () => {
                           <TableHead>Transaction #</TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Employee</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -251,6 +249,13 @@ const CustomerDetail = () => {
                               {sale.employee?.firstname 
                                 ? `${sale.employee.firstname} ${sale.employee.lastname || ''}` 
                                 : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <ViewTransactionDialog transno={sale.transno}>
+                                <Button size="sm" variant="outline">
+                                  View Transactions
+                                </Button>
+                              </ViewTransactionDialog>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -296,6 +301,7 @@ const CustomerDetail = () => {
                           <TableHead>Transaction #</TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Employee</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -311,6 +317,13 @@ const CustomerDetail = () => {
                               {sale.employee?.firstname 
                                 ? `${sale.employee.firstname} ${sale.employee.lastname || ''}` 
                                 : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <ViewTransactionDialog transno={sale.transno}>
+                                <Button size="sm" variant="outline">
+                                  View Transactions
+                                </Button>
+                              </ViewTransactionDialog>
                             </TableCell>
                           </TableRow>
                         ))}
