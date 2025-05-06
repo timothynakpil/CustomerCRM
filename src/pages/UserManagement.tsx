@@ -21,7 +21,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -55,15 +54,10 @@ const UserManagement = () => {
     const checkAdminAccess = async () => {
       if (!currentUser) return;
 
-      // Check if the user is an admin
-      const { data: userData, error } = await supabase
-        .from("user_roles")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .eq("role", "admin")
-        .single();
-
-      if (error || !userData) {
+      // Check if the user is an admin based on metadata
+      const isAdmin = currentUser.user_metadata?.role === "admin";
+      
+      if (!isAdmin) {
         toast({
           title: "Access Denied",
           description: "You don't have permission to access this page.",
@@ -88,23 +82,11 @@ const UserManagement = () => {
         if (authError) throw authError;
 
         if (authUsers && Array.isArray(authUsers)) {
-          // Get user roles
-          const { data: userRoles } = await supabase
-            .from("user_roles")
-            .select("user_id, role");
-          
-          const rolesMap = new Map();
-          if (userRoles) {
-            userRoles.forEach((roleItem) => {
-              rolesMap.set(roleItem.user_id, roleItem.role);
-            });
-          }
-          
-          // Map users with their roles
+          // Map users with their roles from metadata
           const formattedUsers = authUsers.map((user: any) => ({
             id: user.id,
             email: user.email,
-            role: rolesMap.get(user.id) || "user", // Default to user
+            role: user.user_metadata?.role || "user", // Default to user
             created_at: user.created_at,
             last_sign_in_at: user.last_sign_in_at
           }));
@@ -130,19 +112,13 @@ const UserManagement = () => {
     if (!selectedUserId || !selectedRole) return;
     
     try {
-      // First, delete any existing role
-      await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", selectedUserId);
-        
-      // Then add the new role
-      await supabase
-        .from("user_roles")
-        .insert({
-          user_id: selectedUserId,
-          role: selectedRole
-        });
+      // Update the user role in metadata
+      const { error } = await supabase.auth.admin.updateUserById(
+        selectedUserId,
+        { user_metadata: { role: selectedRole } }
+      );
+      
+      if (error) throw error;
         
       // Update the users list
       setUsers(users.map(user => 

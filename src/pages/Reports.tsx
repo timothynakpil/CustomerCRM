@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -62,7 +62,7 @@ const Reports = () => {
   });
   
   // Load customers on component mount
-  useState(() => {
+  useEffect(() => {
     const fetchCustomers = async () => {
       setIsLoading(true);
       try {
@@ -112,8 +112,7 @@ const Reports = () => {
           salesdetail (
             prodcode,
             quantity,
-            product (description, unit),
-            pricehist (unitprice)
+            product (description, unit)
           )
         `)
         .eq("custno", data.custno)
@@ -130,6 +129,33 @@ const Reports = () => {
         return;
       }
       
+      // Fetch the latest prices for all products in these transactions
+      let allProducts: string[] = [];
+      salesData.forEach((sale: any) => {
+        if (sale.salesdetail && Array.isArray(sale.salesdetail)) {
+          sale.salesdetail.forEach((detail: any) => {
+            if (detail.prodcode && !allProducts.includes(detail.prodcode)) {
+              allProducts.push(detail.prodcode);
+            }
+          });
+        }
+      });
+      
+      // Get latest price for each product
+      const priceMap = new Map();
+      for (const prodcode of allProducts) {
+        const { data: priceData } = await supabase
+          .from("pricehist")
+          .select("unitprice, effdate")
+          .eq("prodcode", prodcode)
+          .order("effdate", { ascending: false })
+          .limit(1);
+          
+        if (priceData && priceData.length > 0) {
+          priceMap.set(prodcode, priceData[0].unitprice);
+        }
+      }
+      
       // Process sales data
       const processedData = salesData.map((sale: any) => {
         const empName = sale.employee 
@@ -139,12 +165,20 @@ const Reports = () => {
         // Calculate total for each transaction
         let total = 0;
         
+        const enrichedDetails = [];
         if (sale.salesdetail && Array.isArray(sale.salesdetail)) {
-          sale.salesdetail.forEach((detail: any) => {
-            const price = detail.pricehist?.unitprice || 0;
+          for (const detail of sale.salesdetail) {
+            const price = priceMap.get(detail.prodcode) || 0;
             const quantity = detail.quantity || 0;
-            total += price * quantity;
-          });
+            const subtotal = price * quantity;
+            total += subtotal;
+            
+            enrichedDetails.push({
+              ...detail,
+              pricehist: { unitprice: price },
+              subtotal
+            });
+          }
         }
         
         return {
@@ -152,7 +186,7 @@ const Reports = () => {
           date: new Date(sale.salesdate).toLocaleDateString(),
           employee: empName,
           totalAmount: total.toFixed(2),
-          details: sale.salesdetail || [],
+          details: enrichedDetails,
           rawDate: sale.salesdate // For sorting
         };
       });
