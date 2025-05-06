@@ -7,7 +7,9 @@ import {
   Users,
   LogOut, 
   Menu, 
-  X
+  X,
+  FileText,
+  Settings
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -31,6 +33,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   // Get first letter for avatar with fallback
   const userInitial = userName.charAt(0).toUpperCase();
+  
+  // Check if user is admin (for conditional menu items)
+  const isAdmin = user?.user_metadata?.role === "admin";
 
   const navigationItems = [
     {
@@ -43,7 +48,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       path: "/customers",
       icon: <Users className="h-5 w-5" />,
     },
+    {
+      name: "Reports",
+      path: "/reports",
+      icon: <FileText className="h-5 w-5" />,
+    }
   ];
+  
+  // Add User Management for admins only
+  if (isAdmin) {
+    navigationItems.push({
+      name: "User Management",
+      path: "/users",
+      icon: <Settings className="h-5 w-5" />,
+    });
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">

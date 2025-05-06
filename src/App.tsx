@@ -18,6 +18,9 @@ import Customers from "./pages/Customers";
 import CustomerDetail from "./pages/CustomerDetail";
 import AddCustomer from "./pages/AddCustomer";
 import EditCustomer from "./pages/EditCustomer";
+import Reports from "./pages/Reports";
+import UserManagement from "./pages/UserManagement";
+import UserDetail from "./pages/UserDetail";
 import NotFound from "./pages/NotFound";
 
 // Create a new QueryClient instance
@@ -45,6 +48,9 @@ const App = () => (
                 <Route path="/customers/:id" element={<CustomerDetail />} />
                 <Route path="/customers/add" element={<AddCustomer />} />
                 <Route path="/customers/edit/:id" element={<EditCustomer />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/users" element={<UserManagement />} />
+                <Route path="/users/:id" element={<UserDetail />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
