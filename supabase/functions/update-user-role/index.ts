@@ -13,7 +13,7 @@ interface UpdateRolePayload {
 }
 
 export const handler = async (req: Request) => {
-  // This function can only be called as authenticated user
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -32,6 +32,21 @@ export const handler = async (req: Request) => {
         },
       }
     )
+
+    // Now we can get the session or user object
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser()
+
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Not authorized' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      );
+    }
 
     // Create a Supabase client with service_role to access admin API
     const adminAuthClient = createClient(

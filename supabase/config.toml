@@ -31,5 +31,4 @@ enabled = true
 [functions.list-users]
 verify_jwt = true
 [functions.update-user-role]
-verify_jwt = false
-
+verify_jwt = true

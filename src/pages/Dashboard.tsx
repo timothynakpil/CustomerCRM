@@ -17,9 +17,19 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Only show AdminSetup if user is not already an admin */}
+        {/* Show admin setup to special user */}
         {!isAdmin && user?.email === "jrdeguzman3647@gmail.com" && (
           <AdminSetup />
+        )}
+
+        {/* Show admin confirmation message if already admin */}
+        {isAdmin && user?.email === "jrdeguzman3647@gmail.com" && (
+          <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
+            <h2 className="text-2xl font-bold text-green-700 mb-2">Admin Access Granted</h2>
+            <p className="text-green-600">
+              Your account has admin privileges. You can access the User Management page from the sidebar.
+            </p>
+          </div>
         )}
       </div>
     </DashboardLayout>
