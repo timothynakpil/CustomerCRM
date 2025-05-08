@@ -158,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           data: {
             name,
-            role: "admin", // Set role to admin by default for all new users
+            // Note: We're not automatically setting role to admin for new users anymore
           },
         },
       });
@@ -177,13 +177,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Session exists, so email confirmation is not required or already confirmed
         toast({
           title: "Account created",
-          description: "Your account has been successfully created with admin privileges",
+          description: "Your account has been successfully created",
         });
       } else {
         // No session means confirmation is required
         toast({
           title: "Account created",
-          description: "Please check your email to confirm your account. You'll have admin privileges once confirmed.",
+          description: "Please check your email to confirm your account",
         });
       }
       
