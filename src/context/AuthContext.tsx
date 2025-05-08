@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "../components/ui/use-toast";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
@@ -42,53 +41,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       try {
-        // Set up auth listener FIRST to prevent missing auth events
+        // Set up auth listener for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (_event, currentSession) => {
+          (_event, currentSession) => {
             console.log("Auth state changed:", _event, currentSession?.user?.id);
             setSession(currentSession);
             setUser(currentSession?.user ?? null);
-            
-            // If user exists but doesn't have admin role, update it automatically
-            // Only for existing users, not new registrations
-            if (currentSession?.user) {
-              try {
-                if (!currentSession.user.user_metadata?.role) {
-                  console.log("Setting admin role for existing user");
-                  // Update role to admin for existing users
-                  await supabase.functions.invoke("update-user-role", {
-                    body: { email: currentSession.user.email, role: "admin" }
-                  });
-                  
-                  // Force refresh user data to get updated metadata
-                  const { data } = await supabase.auth.getUser();
-                  if (data?.user) {
-                    setUser(data.user);
-                    console.log("User data refreshed:", data.user.user_metadata);
-                  }
-                }
-              } catch (error) {
-                console.error("Error updating user role:", error);
-              } finally {
-                // Make sure we set loading to false regardless
-                setLoading(false);
-              }
-            } else {
-              setLoading(false);
-            }
+            setLoading(false);
           }
         );
         
-        // THEN check for existing session
+        // Check for existing session
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         console.log("Initial session check:", initialSession?.user?.id);
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
-        
-        if (!initialSession) {
-          // No session, we can set loading to false
-          setLoading(false);
-        }
+        setLoading(false);
         
         // Clean up subscription on unmount
         return () => {
