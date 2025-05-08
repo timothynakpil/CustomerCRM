@@ -44,9 +44,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         // Set up auth listener FIRST to prevent missing auth events
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, currentSession) => {
+          async (_event, currentSession) => {
             setSession(currentSession);
             setUser(currentSession?.user ?? null);
+            
+            // If user exists but doesn't have admin role, update it automatically
+            if (currentSession?.user && currentSession.user.user_metadata?.role !== 'admin') {
+              try {
+                await supabase.functions.invoke("update-user-role", {
+                  body: { email: currentSession.user.email, role: "admin" }
+                });
+                
+                // Force refresh user data to get updated metadata
+                const { data } = await supabase.auth.getUser();
+                if (data?.user) {
+                  setUser(data.user);
+                }
+              } catch (error) {
+                console.error("Error updating user role:", error);
+              }
+            }
           }
         );
         
@@ -141,6 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           data: {
             name,
+            role: "admin", // Set role to admin by default for all new users
           },
         },
       });
@@ -159,13 +177,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Session exists, so email confirmation is not required or already confirmed
         toast({
           title: "Account created",
-          description: "Your account has been successfully created",
+          description: "Your account has been successfully created with admin privileges",
         });
       } else {
         // No session means confirmation is required
         toast({
           title: "Account created",
-          description: "Please check your email to confirm your account",
+          description: "Please check your email to confirm your account. You'll have admin privileges once confirmed.",
         });
       }
       

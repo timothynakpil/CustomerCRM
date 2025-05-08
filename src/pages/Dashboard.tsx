@@ -1,6 +1,5 @@
 
 import DashboardLayout from "@/components/DashboardLayout";
-import AdminSetup from "@/components/AdminSetup";
 import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
@@ -17,13 +16,8 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Show admin setup to special user */}
-        {!isAdmin && user?.email === "jrdeguzman3647@gmail.com" && (
-          <AdminSetup />
-        )}
-
-        {/* Show admin confirmation message if already admin */}
-        {isAdmin && user?.email === "jrdeguzman3647@gmail.com" && (
+        {/* Show admin confirmation message for all users */}
+        {isAdmin && (
           <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
             <h2 className="text-2xl font-bold text-green-700 mb-2">Admin Access Granted</h2>
             <p className="text-green-600">
