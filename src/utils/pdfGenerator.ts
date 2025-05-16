@@ -40,24 +40,70 @@ interface TransactionData {
   details: TransactionDetail[];
 }
 
+// Company brand colors
+const BRAND_COLORS = {
+  primary: [155, 135, 245], // #9b87f5
+  secondary: [126, 105, 171], // #7E69AB
+  accent: [110, 89, 165], // #6E59A5
+  dark: [26, 31, 44], // #1A1F2C
+  light: [214, 188, 250], // #D6BCFA
+  gray: [142, 145, 150], // #8E9196
+};
+
 export const generateCustomerSalesPDF = (customer: CustomerData, sales: TransactionData[]) => {
   try {
+    // Create PDF document with company branding
     const doc = new jsPDF();
     
-    // Add title
-    doc.setFontSize(20);
-    doc.text("Customer Sales Report", 14, 22);
-    
-    // Add customer details
+    // Add company logo placeholder (you would replace this with actual logo)
+    doc.setFillColor(BRAND_COLORS.primary[0], BRAND_COLORS.primary[1], BRAND_COLORS.primary[2]);
+    doc.rect(14, 10, 30, 10, "F");
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
-    doc.text(`Customer: ${customer.custname} (${customer.custno})`, 14, 32);
-    doc.text(`Address: ${customer.address || 'N/A'}`, 14, 38);
-    doc.text(`Payment Terms: ${customer.payterm || 'N/A'}`, 14, 44);
-    doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 14, 50);
+    doc.setFont("helvetica", "bold");
+    doc.text("COMPANY", 17, 16.5);
     
-    // Add sales summary table
+    // Reset text color for rest of the document
+    doc.setTextColor(BRAND_COLORS.dark[0], BRAND_COLORS.dark[1], BRAND_COLORS.dark[2]);
+    
+    // Add title with primary brand color
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("Customer Sales Report", 50, 20);
+    
+    // Add a decorative line
+    doc.setDrawColor(BRAND_COLORS.primary[0], BRAND_COLORS.primary[1], BRAND_COLORS.primary[2]);
+    doc.setLineWidth(0.5);
+    doc.line(14, 24, 196, 24);
+    
+    // Add customer details section with improved styling
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Customer Details", 14, 34);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Name: ${customer.custname} (${customer.custno})`, 14, 42);
+    doc.text(`Address: ${customer.address || 'N/A'}`, 14, 50);
+    doc.text(`Payment Terms: ${customer.payterm || 'N/A'}`, 14, 58);
+    
+    // Add report meta information
+    doc.setFont("helvetica", "bold");
+    doc.text("Report Information", 120, 34);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 120, 42);
+    doc.text(`Total Transactions: ${sales.length}`, 120, 50);
+    
+    const totalSalesAmount = sales.reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0).toFixed(2);
+    doc.text(`Total Amount: $${totalSalesAmount}`, 120, 58);
+    
+    // Add horizontal line as a separator
+    doc.setDrawColor(BRAND_COLORS.gray[0], BRAND_COLORS.gray[1], BRAND_COLORS.gray[2]);
+    doc.setLineWidth(0.2);
+    doc.line(14, 65, 196, 65);
+    
+    // Add sales summary table with improved styling
     doc.setFontSize(14);
-    doc.text("Sales Transactions", 14, 60);
+    doc.setFont("helvetica", "bold");
+    doc.text("Sales Transactions", 14, 75);
     
     const tableColumns = ["Transaction #", "Date", "Employee", "Total Amount"];
     const tableRows = sales.map((sale) => [
@@ -70,10 +116,20 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
     doc.autoTable({
       head: [tableColumns],
       body: tableRows,
-      startY: 65,
+      startY: 80,
       margin: { top: 10 },
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [41, 128, 185] }
+      styles: { 
+        fontSize: 10,
+        cellPadding: 3,
+      },
+      headStyles: { 
+        fillColor: BRAND_COLORS.primary,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252]
+      }
     });
     
     // Add detailed transactions
@@ -86,6 +142,7 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
     }
     
     doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
     doc.text("Transaction Details", 14, yPos);
     yPos += 10;
     
@@ -97,8 +154,14 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
       }
       
       doc.setFontSize(12);
-      doc.text(`Transaction #${sale.transno} - ${sale.date}`, 14, yPos);
-      yPos += 5;
+      doc.setFont("helvetica", "bold");
+      
+      // Transaction header with colored background
+      doc.setFillColor(BRAND_COLORS.light[0], BRAND_COLORS.light[1], BRAND_COLORS.light[2]);
+      doc.rect(14, yPos - 5, 182, 8, "F");
+      doc.setTextColor(BRAND_COLORS.dark[0], BRAND_COLORS.dark[1], BRAND_COLORS.dark[2]);
+      doc.text(`Transaction #${sale.transno} - ${sale.date}`, 16, yPos);
+      yPos += 8;
       
       const detailColumns = ["Product", "Description", "Quantity", "Unit Price", "Subtotal"];
       const detailRows = sale.details.map((detail) => {
@@ -120,12 +183,42 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
         body: detailRows,
         startY: yPos,
         margin: { top: 5 },
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [52, 152, 219] }
+        styles: { 
+          fontSize: 9,
+          cellPadding: 2
+        },
+        headStyles: { 
+          fillColor: BRAND_COLORS.secondary,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        columnStyles: {
+          4: { fontStyle: 'bold' }
+        }
       });
       
-      yPos = doc.lastAutoTable.finalY + (index < sales.length - 1 ? 15 : 5);
+      yPos = doc.lastAutoTable.finalY + (index < sales.length - 1 ? 20 : 5);
     });
+    
+    // Add footer with page numbers
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      const pageText = `Page ${i} of ${pageCount}`;
+      doc.text(pageText, 196 - (doc.getTextWidth(pageText)), 285);
+      
+      // Add footer line
+      doc.setDrawColor(BRAND_COLORS.primary[0], BRAND_COLORS.primary[1], BRAND_COLORS.primary[2]);
+      doc.setLineWidth(0.1);
+      doc.line(14, 280, 196, 280);
+      
+      // Add footer text
+      doc.setFontSize(8);
+      doc.setTextColor(BRAND_COLORS.gray[0], BRAND_COLORS.gray[1], BRAND_COLORS.gray[2]);
+      doc.text("Company Name, Inc. | 123 Business St, City, State 12345 | (555) 123-4567", 14, 285);
+    }
     
     // Save the PDF
     doc.save(`${customer.custno}_Sales_Report.pdf`);
