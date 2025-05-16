@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,12 +15,15 @@ import {
   ProcessedTransaction
 } from "@/services/reportService";
 import { generateCustomerSalesPDF } from "@/utils/pdf";
+import { CustomerData } from "@/utils/pdf/types";
 
 const Reports = () => {
   const [customers, setCustomers] = useState<CustomerBasic[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportData, setReportData] = useState<ProcessedTransaction[]>([]);
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [isReportReady, setIsReportReady] = useState(false);
   const { toast } = useToast();
   
   // Load customers on component mount
@@ -49,12 +53,14 @@ const Reports = () => {
   const onSubmit = async (data: { custno: string }) => {
     setIsGenerating(true);
     setReportData([]);
+    setIsReportReady(false);
     
     try {
       // Fetch customer information
       const { data: customerData, error: customerError } = await getCustomerData(data.custno);
       
       if (customerError) throw customerError;
+      setCustomerData(customerData);
       
       // Fetch all sales transactions for this customer
       const { data: salesData, error: salesError } = await getCustomerSales(data.custno);
@@ -85,9 +91,33 @@ const Reports = () => {
       );
       
       setReportData(processedData);
+      setIsReportReady(true);
       
+      toast({
+        title: "Success",
+        description: "Report data loaded successfully. Click 'Download PDF' to generate the report.",
+      });
+      
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!customerData || reportData.length === 0) return;
+    
+    setIsGenerating(true);
+    
+    try {
       // Generate PDF
-      const success = generateCustomerSalesPDF(customerData, processedData);
+      const success = generateCustomerSalesPDF(customerData, reportData);
       
       if (success) {
         toast({
@@ -97,12 +127,11 @@ const Reports = () => {
       } else {
         throw new Error("PDF generation failed");
       }
-      
     } catch (error) {
-      console.error("Error generating report:", error);
+      console.error("Error generating PDF:", error);
       toast({
         title: "Error",
-        description: "Failed to generate report",
+        description: "Failed to generate PDF",
         variant: "destructive",
       });
     } finally {
@@ -130,7 +159,12 @@ const Reports = () => {
               onSubmit={onSubmit}
             />
             
-            <ReportPreview reportData={reportData} />
+            <ReportPreview 
+              reportData={reportData}
+              customerData={customerData}
+              onDownload={handleDownloadPDF}
+              disableDownload={isGenerating || !isReportReady}
+            />
           </div>
         </TabsContent>
       </Tabs>
