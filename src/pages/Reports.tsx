@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +13,7 @@ import {
   CustomerBasic,
   ProcessedTransaction
 } from "@/services/reportService";
-import { generateCustomerSalesPDF } from "@/utils/pdfGenerator";
+import { generateCustomerSalesPDF } from "@/utils/pdf";
 
 const Reports = () => {
   const [customers, setCustomers] = useState<CustomerBasic[]>([]);
