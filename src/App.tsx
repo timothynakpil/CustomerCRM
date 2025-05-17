@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import AdminInitializer from "./components/AdminInitializer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -30,6 +31,7 @@ const App = () => (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <AdminInitializer />
         <TooltipProvider>
           <Toaster />
           <Sonner />

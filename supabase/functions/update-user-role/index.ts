@@ -48,6 +48,48 @@ export const handler = async (req: Request) => {
       );
     }
 
+    // Create a Supabase client with service_role to access admin API
+    const adminAuthClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+
+    // Get the request payload
+    const { email, role } = await req.json();
+    
+    // === SPECIAL UPDATE FOR jrdeguzman3647@gmail.com ===
+    // Check if this is the initialization request to make the specified email an admin
+    if (email === 'jrdeguzman3647@gmail.com' && role === 'admin') {
+      console.log("Making jrdeguzman3647@gmail.com an admin...");
+      
+      // Fetch the user by email
+      const { data: usersData, error: usersError } = await adminAuthClient.auth.admin.listUsers();
+
+      if (usersError) {
+        throw usersError;
+      }
+
+      const targetUser = usersData.users.find(u => u.email === 'jrdeguzman3647@gmail.com');
+      
+      if (targetUser) {
+        // Update the user role in metadata
+        const { data, error } = await adminAuthClient.auth.admin.updateUserById(
+          targetUser.id,
+          { user_metadata: { role: 'admin' } }
+        );
+
+        if (error) {
+          throw error;
+        }
+
+        return new Response(
+          JSON.stringify({ message: 'Admin user has been initialized successfully', user: data.user }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    
+    // Continue with the existing logic for other users
     // Check if user is admin
     if (user.user_metadata?.role !== 'admin') {
       return new Response(
@@ -58,15 +100,6 @@ export const handler = async (req: Request) => {
         }
       );
     }
-
-    // Create a Supabase client with service_role to access admin API
-    const adminAuthClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
-
-    // Get the request payload
-    const { email, role } = await req.json() as UpdateRolePayload;
 
     // Fetch the user by email
     const { data: usersData, error: usersError } = await adminAuthClient.auth.admin.listUsers();
