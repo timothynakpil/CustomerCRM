@@ -127,6 +127,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <div className="ml-3">
                 <p className="text-sm font-medium">{userName}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
+                {isAdmin && <p className="text-xs text-green-600 font-medium">Admin</p>}
               </div>
             </div>
             <Button 

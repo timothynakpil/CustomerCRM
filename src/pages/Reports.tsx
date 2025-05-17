@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CustomerSalesForm from "@/components/reports/CustomerSalesForm";
 import ReportPreview from "@/components/reports/ReportPreview";
+import DashboardLayout from "@/components/DashboardLayout";
 import { 
   getCustomers, 
   getCustomerData, 
@@ -140,35 +141,37 @@ const Reports = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Reports</h1>
-      </div>
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Reports</h1>
+        </div>
 
-      <Tabs defaultValue="customer-sales">
-        <TabsList>
-          <TabsTrigger value="customer-sales">Customer Sales Report</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="customer-sales" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <CustomerSalesForm 
-              customers={customers}
-              isLoading={isLoading}
-              isGenerating={isGenerating}
-              onSubmit={onSubmit}
-            />
-            
-            <ReportPreview 
-              reportData={reportData}
-              customerData={customerData}
-              onDownload={handleDownloadPDF}
-              disableDownload={isGenerating || !isReportReady}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+        <Tabs defaultValue="customer-sales">
+          <TabsList>
+            <TabsTrigger value="customer-sales">Customer Sales Report</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="customer-sales" className="mt-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <CustomerSalesForm 
+                customers={customers}
+                isLoading={isLoading}
+                isGenerating={isGenerating}
+                onSubmit={onSubmit}
+              />
+              
+              <ReportPreview 
+                reportData={reportData}
+                customerData={customerData}
+                onDownload={handleDownloadPDF}
+                disableDownload={isGenerating || !isReportReady}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
   );
 };
 
