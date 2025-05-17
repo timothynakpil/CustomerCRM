@@ -16,6 +16,8 @@ const AdminInitializer = () => {
       // Check if this is the target email account
       if (user.email === 'jrdeguzman3647@gmail.com') {
         try {
+          console.log("AdminInitializer: Detected target email, setting up admin role");
+          
           const { data, error } = await supabase.functions.invoke("update-user-role", {
             body: {
               email: 'jrdeguzman3647@gmail.com',

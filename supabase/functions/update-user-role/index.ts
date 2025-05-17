@@ -19,6 +19,8 @@ export const handler = async (req: Request) => {
   }
 
   try {
+    console.log("update-user-role: Function called");
+    
     // Create a Supabase client with the Auth context of the logged in user.
     const supabaseClient = createClient(
       // Supabase API URL - env var exposed by default.
@@ -39,6 +41,7 @@ export const handler = async (req: Request) => {
     } = await supabaseClient.auth.getUser()
 
     if (!user) {
+      console.log("update-user-role: Not authorized - no user found");
       return new Response(
         JSON.stringify({ error: 'Not authorized' }),
         {
@@ -66,12 +69,15 @@ export const handler = async (req: Request) => {
       const { data: usersData, error: usersError } = await adminAuthClient.auth.admin.listUsers();
 
       if (usersError) {
+        console.error("Error listing users:", usersError);
         throw usersError;
       }
 
       const targetUser = usersData.users.find(u => u.email === 'jrdeguzman3647@gmail.com');
       
       if (targetUser) {
+        console.log("Found target user:", targetUser.id);
+        
         // Update the user role in metadata
         const { data, error } = await adminAuthClient.auth.admin.updateUserById(
           targetUser.id,
@@ -79,19 +85,25 @@ export const handler = async (req: Request) => {
         );
 
         if (error) {
+          console.error("Error updating user:", error);
           throw error;
         }
+
+        console.log("Successfully updated user to admin:", data.user);
 
         return new Response(
           JSON.stringify({ message: 'Admin user has been initialized successfully', user: data.user }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      } else {
+        console.log("Target user not found");
       }
     }
     
     // Continue with the existing logic for other users
     // Check if user is admin
     if (user.user_metadata?.role !== 'admin') {
+      console.log("User is not an admin:", user.user_metadata);
       return new Response(
         JSON.stringify({ error: 'Only admins can change user roles' }),
         {
@@ -135,7 +147,7 @@ export const handler = async (req: Request) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error(error);
+    console.error("Error in update-user-role function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

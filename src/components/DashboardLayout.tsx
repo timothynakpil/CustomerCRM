@@ -9,9 +9,10 @@ import {
   Menu, 
   X,
   FileText,
-  Settings
+  Settings,
+  UserCog
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -36,6 +37,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   // Check if user is admin (for conditional menu items)
   const isAdmin = user?.user_metadata?.role === "admin";
+  
+  console.log("DashboardLayout: User metadata:", user?.user_metadata);
+  console.log("DashboardLayout: Is admin?", isAdmin);
 
   const navigationItems = [
     {
@@ -60,7 +64,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     navigationItems.push({
       name: "User Management",
       path: "/users",
-      icon: <Settings className="h-5 w-5" />,
+      icon: <UserCog className="h-5 w-5" />,
     });
   }
 
