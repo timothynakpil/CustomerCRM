@@ -5,8 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 const Dashboard = () => {
   const { user } = useAuth();
   
-  // Only specific account (John Robert De Guzman) is admin
-  const isAdmin = user?.email === "john.robert.deguzman@gmail.com";
+  // Check if the user has admin role
+  const isAdmin = user?.user_metadata?.role === "admin";
   
   return (
     <DashboardLayout>
@@ -18,7 +18,7 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Show admin confirmation message only for the specific admin account */}
+        {/* Show admin confirmation message only for admin users */}
         {isAdmin && (
           <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
             <h2 className="text-2xl font-bold text-green-700 mb-2">Admin Access Granted</h2>

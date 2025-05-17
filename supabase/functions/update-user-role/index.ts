@@ -48,6 +48,17 @@ export const handler = async (req: Request) => {
       );
     }
 
+    // Check if user is admin
+    if (user.user_metadata?.role !== 'admin') {
+      return new Response(
+        JSON.stringify({ error: 'Only admins can change user roles' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        }
+      );
+    }
+
     // Create a Supabase client with service_role to access admin API
     const adminAuthClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
