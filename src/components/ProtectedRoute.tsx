@@ -1,9 +1,12 @@
 
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const ProtectedRoute = () => {
   const { isAuthenticated, loading } = useAuth();
+  const { toast } = useToast();
+  const location = useLocation();
 
   console.log("ProtectedRoute - loading:", loading, "isAuthenticated:", isAuthenticated);
 
@@ -20,6 +23,7 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
+  // All routes are accessible to all logged-in users now
   return <Outlet />;
 };
 

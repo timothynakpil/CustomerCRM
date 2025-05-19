@@ -13,8 +13,15 @@ const AdminInitializer = () => {
     const initializeAdmin = async () => {
       if (!user || initialized) return;
       
+      // Check if the user already has admin role before making the API call
+      if (user.user_metadata?.role === "admin") {
+        console.log("User is already an admin, skipping initialization");
+        setInitialized(true);
+        return;
+      }
+      
       try {
-        console.log("AdminInitializer: Setting all users as admin");
+        console.log("AdminInitializer: Setting user as admin");
         
         const { data, error } = await supabase.functions.invoke("update-user-role", {
           body: {
@@ -32,8 +39,21 @@ const AdminInitializer = () => {
           description: "Your account has been set as an admin user.",
         });
         
-        // Force page reload to update the UI with new permissions
-        window.location.reload();
+        // Update user metadata locally to avoid page reload
+        const updatedUser = {
+          ...user,
+          user_metadata: {
+            ...user.user_metadata,
+            role: 'admin'
+          }
+        };
+        
+        // Update local session data (this can vary depending on your auth context)
+        localStorage.setItem('supabase.auth.token', JSON.stringify({
+          currentSession: {
+            user: updatedUser
+          }
+        }));
       } catch (error) {
         console.error("Failed to initialize admin:", error);
       }

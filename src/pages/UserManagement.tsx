@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -48,36 +47,14 @@ const UserManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  // Check if current user is admin
-  useEffect(() => {
-    const checkAdminAccess = async () => {
-      if (!currentUser) return;
-
-      // Check if the user is an admin based on metadata
-      const isAdmin = currentUser.user_metadata?.role === "admin";
-      
-      if (!isAdmin) {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page.",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-      }
-    };
-
-    checkAdminAccess();
-  }, [currentUser, navigate, toast]);
-
-  // Fetch all users
+  // Fetch all users - no admin check required
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
         
-        // Get all users from auth.users through our custom API (admin only)
+        // Get all users from auth.users through our custom API 
         const { data: authUsers, error: authError } = await supabase.functions.invoke("list-users");
         
         if (authError) throw authError;
@@ -147,16 +124,6 @@ const UserManagement = () => {
   };
 
   const openChangeRoleDialog = (userId: string, currentRole: "admin" | "user" | "blocked") => {
-    // Don't allow changing own role
-    if (userId === currentUser?.id) {
-      toast({
-        title: "Not Allowed",
-        description: "You cannot change your own role.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setSelectedUserId(userId);
     setSelectedRole(currentRole);
     setIsDialogOpen(true);
@@ -226,7 +193,6 @@ const UserManagement = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => openChangeRoleDialog(user.id, user.role)}
-                          disabled={user.id === currentUser?.id}
                         >
                           Change Role
                         </Button>

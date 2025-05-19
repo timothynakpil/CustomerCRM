@@ -78,7 +78,8 @@ serve(async (req) => {
       throw usersError;
     }
 
-    const targetUser = usersData.users.find(u => u.email === email);
+    // Case insensitive email search
+    const targetUser = usersData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
     
     if (!targetUser) {
       return new Response(
