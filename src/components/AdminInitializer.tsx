@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-// This component now ensures users have a role and handles special owner role
 const AdminInitializer = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -13,19 +12,24 @@ const AdminInitializer = () => {
     const ensureUserRole = async () => {
       if (!user || initialized) return;
       
-      // Check if user already has any role
-      if (user.user_metadata?.role) {
-        console.log("User already has a role, skipping initialization");
-        setInitialized(true);
-        return;
-      }
-      
       try {
-        // Determine the initial role based on email
-        const isOwner = user.email === "jrdeguzman3647@gmail.com";
-        const initialRole = isOwner ? 'owner' : 'user';
+        // Check if the special owner email matches
+        const isOwnerEmail = user.email === "jrdeguzman3647@gmail.com";
         
-        // Update user metadata locally to include a role
+        // If user already has the correct role, skip initialization
+        if ((isOwnerEmail && user.user_metadata?.role === 'owner') || 
+            (!isOwnerEmail && user.user_metadata?.role)) {
+          console.log("User already has correct role, skipping initialization");
+          setInitialized(true);
+          return;
+        }
+        
+        // Determine the role based on email
+        const initialRole = isOwnerEmail ? 'owner' : (user.user_metadata?.role || 'user');
+        
+        console.log(`Initializing user role to: ${initialRole}`);
+        
+        // Update user metadata locally
         const session = JSON.parse(localStorage.getItem('sb-avocdhvgtmkguyboohkc-auth-token') || '{}');
         if (session.user) {
           session.user.user_metadata = {
@@ -36,8 +40,29 @@ const AdminInitializer = () => {
           
           toast({
             title: `User role initialized`,
-            description: `Your account has been initialized with a ${initialRole} role.`,
+            description: `Your account has been initialized with the ${initialRole} role.`,
           });
+        }
+        
+        // Try to update the role on the server if it's the owner
+        if (isOwnerEmail) {
+          try {
+            await fetch(`https://avocdhvgtmkguyboohkc.functions.supabase.co/update-user-role`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`
+              },
+              body: JSON.stringify({
+                email: user.email,
+                role: 'owner',
+                requestingUserEmail: user.email
+              })
+            });
+          } catch (error) {
+            console.error("Failed to update owner role on server:", error);
+            // Continue anyway since we updated locally
+          }
         }
       } catch (error) {
         console.error("Failed to initialize user role:", error);

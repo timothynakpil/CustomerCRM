@@ -51,65 +51,109 @@ const UserManagement = () => {
 
   const currentUserRole = currentUser?.user_metadata?.role || 'user';
   const isOwner = currentUserRole === 'owner';
+  const isAdmin = currentUserRole === 'admin';
 
-  // Method to get users from local session and sample data
   useEffect(() => {
-    const fetchLocalUser = async () => {
-      try {
-        setLoading(true);
-        
-        // Create a sample user array with just the current user
-        if (currentUser) {
-          const currentUserData: User = {
-            id: currentUser.id,
-            email: currentUser.email!,
-            role: currentUser.user_metadata?.role || 'user',
-            created_at: currentUser.created_at || new Date().toISOString(),
-            last_sign_in_at: currentUser.last_sign_in_at || null
-          };
-          
-          // Add a sample user - in a real app, we'd fetch actual users
-          const sampleUsers: User[] = [currentUserData];
-          
-          // Add sample admin if current user is not the sample admin
-          if (currentUser.email !== "jrdeguzman3647@gmail.com") {
-            sampleUsers.push({
-              id: "sample-owner-id",
-              email: "jrdeguzman3647@gmail.com",
-              role: "owner",
-              created_at: new Date().toISOString(),
-              last_sign_in_at: null
-            });
-          }
-          
-          // Add another sample user
-          if (!sampleUsers.some(u => u.email === "sample.user@example.com")) {
-            sampleUsers.push({
-              id: "sample-user-id",
-              email: "sample.user@example.com",
-              role: "user",
-              created_at: new Date().toISOString(),
-              last_sign_in_at: null
-            });
-          }
-          
-          setUsers(sampleUsers);
-          console.log("Loaded user data:", sampleUsers);
-        }
-      } catch (error) {
-        console.error("Error setting up user data:", error);
-        toast({
-          title: "Notice",
-          description: "Only showing current user information.",
-          variant: "default",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchUsers();
+  }, [currentUser]);
 
-    fetchLocalUser();
-  }, [currentUser, toast]);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      
+      // First try to fetch users from Supabase Edge Function
+      const { data: supabaseUsers, error } = await supabase.functions.invoke('list-users');
+      
+      if (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          title: "Error fetching users",
+          description: "Could not load users from the server. Using local data instead.",
+          variant: "destructive",
+        });
+        
+        // Fall back to local data if the edge function fails
+        const fallbackData = getFallbackUsers();
+        setUsers(fallbackData);
+        return;
+      }
+      
+      if (supabaseUsers && Array.isArray(supabaseUsers)) {
+        const formattedUsers = supabaseUsers.map(user => ({
+          id: user.id,
+          email: user.email || "",
+          role: (user.user_metadata?.role || "user") as "owner" | "admin" | "user" | "blocked",
+          created_at: user.created_at || new Date().toISOString(),
+          last_sign_in_at: user.last_sign_in_at || null
+        }));
+        
+        setUsers(formattedUsers);
+      } else {
+        // Fall back to local data if the response format is unexpected
+        const fallbackData = getFallbackUsers();
+        setUsers(fallbackData);
+      }
+    } catch (error) {
+      console.error("Error in fetchUsers:", error);
+      
+      // Fall back to local data if there's any error
+      const fallbackData = getFallbackUsers();
+      setUsers(fallbackData);
+      
+      toast({
+        title: "Error",
+        description: "Failed to fetch users. Using local data instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get fallback users when API fails
+  const getFallbackUsers = () => {
+    // Create a fallback user array that includes the current user
+    const fallbackUsers: User[] = [];
+    
+    // Always add the current user
+    if (currentUser) {
+      fallbackUsers.push({
+        id: currentUser.id,
+        email: currentUser.email!,
+        role: currentUser.user_metadata?.role || 'user',
+        created_at: currentUser.created_at || new Date().toISOString(),
+        last_sign_in_at: currentUser.last_sign_in_at || null
+      });
+    }
+    
+    // Add sample owner if current user is not the owner
+    if (currentUser?.email !== "jrdeguzman3647@gmail.com") {
+      fallbackUsers.push({
+        id: "sample-owner-id",
+        email: "jrdeguzman3647@gmail.com",
+        role: "owner",
+        created_at: new Date().toISOString(),
+        last_sign_in_at: null
+      });
+    }
+    
+    // Add other sample users if needed
+    const sampleEmails = ["sample.user@example.com", "ravenrillera2@gmail.com", "leozata032@gmail.com"];
+    
+    sampleEmails.forEach(email => {
+      if (!fallbackUsers.some(u => u.email === email) && email !== currentUser?.email) {
+        fallbackUsers.push({
+          id: `sample-id-${email.split('@')[0]}`,
+          email: email,
+          role: email === "ravenrillera2@gmail.com" ? "admin" : "user",
+          created_at: new Date().toISOString(),
+          last_sign_in_at: email === "leozata032@gmail.com" ? new Date().toISOString() : null
+        });
+      }
+    });
+    
+    return fallbackUsers;
+  };
 
   const handleRoleChange = async () => {
     if (!selectedUserId || !selectedRole) return;
@@ -139,42 +183,78 @@ const UserManagement = () => {
         return;
       }
       
-      // Update local state first for immediate feedback
-      setUsers(users.map(user => 
-        user.id === selectedUserId 
-          ? { ...user, role: selectedRole }
-          : user
-      ));
-      
-      // Only attempt to update if it's the current user
-      if (selectedUserId === currentUser?.id) {
-        // Update the user metadata locally
-        const updatedMetadata = {
-          ...currentUser.user_metadata,
-          role: selectedRole
-        };
-        
-        // Store updated metadata in localStorage
-        const session = JSON.parse(localStorage.getItem('sb-avocdhvgtmkguyboohkc-auth-token') || '{}');
-        if (session.user) {
-          session.user.user_metadata = updatedMetadata;
-          localStorage.setItem('sb-avocdhvgtmkguyboohkc-auth-token', JSON.stringify(session));
+      // Try to update the user role through the edge function
+      const { data, error } = await supabase.functions.invoke("update-user-role", {
+        body: {
+          email: selectedUserEmail,
+          role: selectedRole,
+          requestingUserEmail: currentUser?.email
         }
-      }
-      
-      toast({
-        title: "Success",
-        description: `User role updated to ${selectedRole}.`
       });
+      
+      if (error) {
+        console.error("Error updating user role:", error);
+        
+        // Fall back to local update if edge function fails
+        setUsers(users.map(user => 
+          user.id === selectedUserId 
+            ? { ...user, role: selectedRole }
+            : user
+        ));
+        
+        // Update local storage session if it's the current user
+        if (selectedUserId === currentUser?.id) {
+          updateLocalUserRole(selectedRole);
+        }
+        
+        toast({
+          title: "Warning",
+          description: "Updated role locally, but couldn't update on the server.",
+          variant: "default"
+        });
+      } else {
+        // Update local state with the server response
+        setUsers(users.map(user => 
+          user.id === selectedUserId 
+            ? { ...user, role: selectedRole }
+            : user
+        ));
+        
+        // If it's the current user, update local storage
+        if (selectedUserId === currentUser?.id) {
+          updateLocalUserRole(selectedRole);
+        }
+        
+        toast({
+          title: "Success",
+          description: `User role updated to ${selectedRole}.`
+        });
+      }
       
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Error updating user role:", error);
+      console.error("Error in handleRoleChange:", error);
       toast({
         title: "Error",
         description: "Failed to update user role.",
         variant: "destructive"
       });
+    }
+  };
+  
+  // Helper function to update the user role in localStorage
+  const updateLocalUserRole = (role: string) => {
+    try {
+      const session = JSON.parse(localStorage.getItem('sb-avocdhvgtmkguyboohkc-auth-token') || '{}');
+      if (session.user) {
+        session.user.user_metadata = {
+          ...session.user.user_metadata,
+          role: role
+        };
+        localStorage.setItem('sb-avocdhvgtmkguyboohkc-auth-token', JSON.stringify(session));
+      }
+    } catch (error) {
+      console.error("Error updating local user role:", error);
     }
   };
 
@@ -208,6 +288,9 @@ const UserManagement = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">User Management</h1>
+          <Button variant="outline" onClick={fetchUsers} disabled={loading}>
+            Refresh Users
+          </Button>
         </div>
 
         <div className="bg-white rounded-md border shadow">
@@ -257,9 +340,9 @@ const UserManagement = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => openChangeRoleDialog(user.id, user.email, user.role)}
-                          disabled={!canChangeRole(user.role)}
+                          disabled={!canChangeRole(user.role) || user.email === "jrdeguzman3647@gmail.com" && currentUserEmail !== "jrdeguzman3647@gmail.com"}
                         >
-                          {canChangeRole(user.role) ? "Change Role" : "No Permission"}
+                          {canChangeRole(user.role) && !(user.email === "jrdeguzman3647@gmail.com" && currentUser?.email !== "jrdeguzman3647@gmail.com") ? "Change Role" : "No Permission"}
                         </Button>
                       </TableCell>
                     </TableRow>
