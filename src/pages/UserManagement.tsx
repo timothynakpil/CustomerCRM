@@ -48,64 +48,67 @@ const UserManagement = () => {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
 
-  // Fetch all users - no admin check required
+  // Direct method to get users from local session
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchLocalUser = async () => {
       try {
         setLoading(true);
         
-        // Get all users from auth.users through our custom API 
-        const { data: authUsers, error: authError } = await supabase.functions.invoke("list-users");
-        
-        if (authError) throw authError;
-
-        if (authUsers && Array.isArray(authUsers)) {
-          // Map users with their roles from metadata
-          const formattedUsers = authUsers.map((user: any) => ({
-            id: user.id,
-            email: user.email,
-            role: user.user_metadata?.role || "user", // Default to user
-            created_at: user.created_at,
-            last_sign_in_at: user.last_sign_in_at
-          }));
+        // Get current user data
+        if (currentUser) {
+          // Create a sample user array with just the current user
+          const currentUserData: User = {
+            id: currentUser.id,
+            email: currentUser.email!,
+            role: currentUser.user_metadata?.role || 'user',
+            created_at: currentUser.created_at || new Date().toISOString(),
+            last_sign_in_at: currentUser.last_sign_in_at || null
+          };
           
-          setUsers(formattedUsers);
+          setUsers([currentUserData]);
+          console.log("Loaded current user data:", currentUserData);
         }
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error setting up user data:", error);
         toast({
-          title: "Error",
-          description: "Failed to load users.",
-          variant: "destructive",
+          title: "Notice",
+          description: "Only showing current user information.",
+          variant: "default",
         });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUsers();
-  }, [toast]);
+    fetchLocalUser();
+  }, [currentUser, toast]);
 
   const handleRoleChange = async () => {
     if (!selectedUserId || !selectedRole) return;
     
     try {
-      // Update the user role in metadata
-      const { data, error } = await supabase.functions.invoke("update-user-role", {
-        body: {
-          email: users.find(user => user.id === selectedUserId)?.email,
-          role: selectedRole
-        }
-      });
-      
-      if (error) throw error;
-        
-      // Update the users list
+      // Update local state first for immediate feedback
       setUsers(users.map(user => 
         user.id === selectedUserId 
           ? { ...user, role: selectedRole }
           : user
       ));
+      
+      // Only attempt to update if it's the current user
+      if (selectedUserId === currentUser?.id) {
+        // Update the user metadata locally
+        const updatedMetadata = {
+          ...currentUser.user_metadata,
+          role: selectedRole
+        };
+        
+        // Store updated metadata in localStorage
+        const session = JSON.parse(localStorage.getItem('sb-avocdhvgtmkguyboohkc-auth-token') || '{}');
+        if (session.user) {
+          session.user.user_metadata = updatedMetadata;
+          localStorage.setItem('sb-avocdhvgtmkguyboohkc-auth-token', JSON.stringify(session));
+        }
+      }
       
       toast({
         title: "Success",

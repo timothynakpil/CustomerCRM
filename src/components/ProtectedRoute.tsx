@@ -23,7 +23,7 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // All routes are accessible to all logged-in users now
+  // All routes are accessible to all logged-in users
   return <Outlet />;
 };
 
