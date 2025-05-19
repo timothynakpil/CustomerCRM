@@ -9,7 +9,8 @@ import {
   Menu, 
   X,
   FileText,
-  UserCog
+  UserCog,
+  Shield
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   // Get first letter for avatar with fallback
   const userInitial = userName.charAt(0).toUpperCase();
+  // Get user role with fallback
+  const userRole = user?.user_metadata?.role || 'user';
+  
+  // Role label color
+  const getRoleBadgeColor = (role: string) => {
+    switch(role) {
+      case "owner": return "text-purple-600 font-semibold";
+      case "admin": return "text-green-600 font-medium";
+      case "user": return "text-blue-600";
+      case "blocked": return "text-red-600";
+      default: return "text-gray-600";
+    }
+  };
 
   const navigationItems = [
     {
@@ -120,7 +134,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <div className="ml-3">
                 <p className="text-sm font-medium">{userName}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
-                <p className="text-xs text-green-600 font-medium">Admin</p>
+                <div className="flex items-center">
+                  {userRole === 'owner' && <Shield className="h-3 w-3 mr-1 text-purple-600" />}
+                  <p className={`text-xs ${getRoleBadgeColor(userRole)}`}>
+                    {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                  </p>
+                </div>
               </div>
             </div>
             <Button 

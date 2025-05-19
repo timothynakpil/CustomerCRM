@@ -47,7 +47,7 @@ serve(async (req) => {
     )
 
     // Get the request body
-    const { email, role } = await req.json()
+    const { email, role, requestingUserEmail } = await req.json()
 
     if (!email || !role) {
       return new Response(
@@ -60,12 +60,77 @@ serve(async (req) => {
     }
 
     // Validate role
-    if (!['admin', 'user', 'blocked'].includes(role)) {
+    if (!['owner', 'admin', 'user', 'blocked'].includes(role)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid role. Must be admin, user, or blocked' }),
+        JSON.stringify({ error: 'Invalid role. Must be owner, admin, user, or blocked' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
+        }
+      )
+    }
+
+    // Get the authenticated user's JWT claims to check their role
+    const { data: { user: requestingUser } } = await supabaseClient.auth.getUser();
+    
+    if (!requestingUser) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      )
+    }
+    
+    const requestingUserRole = requestingUser.user_metadata?.role || 'user';
+    
+    // Owner role special rules
+    if (email === "jrdeguzman3647@gmail.com" && role !== 'owner' && requestingUserEmail !== "jrdeguzman3647@gmail.com") {
+      return new Response(
+        JSON.stringify({ error: 'The owner role cannot be changed except by the owner themselves' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        }
+      )
+    }
+    
+    // If setting someone as owner
+    if (role === 'owner' && email !== "jrdeguzman3647@gmail.com") {
+      if (requestingUserRole !== 'owner') {
+        return new Response(
+          JSON.stringify({ error: 'Only the owner can assign owner status' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 403,
+          }
+        )
+      }
+      
+      // Need to demote the current owner first
+      const { data: usersData } = await adminAuthClient.auth.admin.listUsers();
+      const currentOwner = usersData?.users.find(u => 
+        u.user_metadata?.role === 'owner' && u.email !== email
+      );
+      
+      if (currentOwner) {
+        await adminAuthClient.auth.admin.updateUserById(
+          currentOwner.id,
+          { user_metadata: { role: 'admin' } }
+        );
+        
+        console.log("Demoted current owner to admin");
+      }
+    }
+
+    // Admin role permission check
+    if (requestingUserRole !== 'owner' && (role === 'owner' || email === "jrdeguzman3647@gmail.com")) {
+      return new Response(
+        JSON.stringify({ error: 'Only an owner can modify other owners' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
         }
       )
     }
@@ -96,7 +161,7 @@ serve(async (req) => {
     // Update the user role in metadata
     const { data, error } = await adminAuthClient.auth.admin.updateUserById(
       targetUser.id,
-      { user_metadata: { role } }
+      { user_metadata: { ...targetUser.user_metadata, role } }
     );
 
     if (error) {

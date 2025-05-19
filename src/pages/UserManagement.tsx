@@ -34,7 +34,7 @@ import { useAuth } from "@/context/AuthContext";
 type User = {
   id: string;
   email: string;
-  role: "admin" | "user" | "blocked";
+  role: "owner" | "admin" | "user" | "blocked";
   created_at: string;
   last_sign_in_at: string | null;
 };
@@ -43,20 +43,23 @@ const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<"admin" | "user" | "blocked">("user");
+  const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"owner" | "admin" | "user" | "blocked">("user");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
 
-  // Direct method to get users from local session
+  const currentUserRole = currentUser?.user_metadata?.role || 'user';
+  const isOwner = currentUserRole === 'owner';
+
+  // Method to get users from local session and sample data
   useEffect(() => {
     const fetchLocalUser = async () => {
       try {
         setLoading(true);
         
-        // Get current user data
+        // Create a sample user array with just the current user
         if (currentUser) {
-          // Create a sample user array with just the current user
           const currentUserData: User = {
             id: currentUser.id,
             email: currentUser.email!,
@@ -65,8 +68,33 @@ const UserManagement = () => {
             last_sign_in_at: currentUser.last_sign_in_at || null
           };
           
-          setUsers([currentUserData]);
-          console.log("Loaded current user data:", currentUserData);
+          // Add a sample user - in a real app, we'd fetch actual users
+          const sampleUsers: User[] = [currentUserData];
+          
+          // Add sample admin if current user is not the sample admin
+          if (currentUser.email !== "jrdeguzman3647@gmail.com") {
+            sampleUsers.push({
+              id: "sample-owner-id",
+              email: "jrdeguzman3647@gmail.com",
+              role: "owner",
+              created_at: new Date().toISOString(),
+              last_sign_in_at: null
+            });
+          }
+          
+          // Add another sample user
+          if (!sampleUsers.some(u => u.email === "sample.user@example.com")) {
+            sampleUsers.push({
+              id: "sample-user-id",
+              email: "sample.user@example.com",
+              role: "user",
+              created_at: new Date().toISOString(),
+              last_sign_in_at: null
+            });
+          }
+          
+          setUsers(sampleUsers);
+          console.log("Loaded user data:", sampleUsers);
         }
       } catch (error) {
         console.error("Error setting up user data:", error);
@@ -87,6 +115,30 @@ const UserManagement = () => {
     if (!selectedUserId || !selectedRole) return;
     
     try {
+      const targetUser = users.find(user => user.id === selectedUserId);
+      
+      // Check if current user is trying to change owner's role
+      if (targetUser?.role === 'owner' && currentUserRole !== 'owner') {
+        toast({
+          title: "Permission Denied",
+          description: "Only an owner can change another owner's role.",
+          variant: "destructive"
+        });
+        setIsDialogOpen(false);
+        return;
+      }
+      
+      // Check if trying to set someone as owner when there's already an owner
+      if (selectedRole === 'owner' && users.some(u => u.role === 'owner' && u.id !== selectedUserId)) {
+        toast({
+          title: "Permission Denied",
+          description: "There can only be one owner account.",
+          variant: "destructive"
+        });
+        setIsDialogOpen(false);
+        return;
+      }
+      
       // Update local state first for immediate feedback
       setUsers(users.map(user => 
         user.id === selectedUserId 
@@ -126,8 +178,9 @@ const UserManagement = () => {
     }
   };
 
-  const openChangeRoleDialog = (userId: string, currentRole: "admin" | "user" | "blocked") => {
+  const openChangeRoleDialog = (userId: string, email: string, currentRole: "owner" | "admin" | "user" | "blocked") => {
     setSelectedUserId(userId);
+    setSelectedUserEmail(email);
     setSelectedRole(currentRole);
     setIsDialogOpen(true);
   };
@@ -135,11 +188,19 @@ const UserManagement = () => {
   // Role badge color
   const getRoleBadgeVariant = (role: string) => {
     switch(role) {
-      case "admin": return "default";
-      case "user": return "secondary";
+      case "owner": return "default"; // Primary color for owner
+      case "admin": return "secondary";
+      case "user": return "outline";
       case "blocked": return "destructive";
       default: return "outline";
     }
+  };
+
+  // Check if the current user can change a specific user's role
+  const canChangeRole = (userRole: string): boolean => {
+    if (currentUserRole === 'owner') return true;
+    if (currentUserRole === 'admin' && userRole !== 'owner') return true;
+    return false;
   };
 
   return (
@@ -195,9 +256,10 @@ const UserManagement = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => openChangeRoleDialog(user.id, user.role)}
+                          onClick={() => openChangeRoleDialog(user.id, user.email, user.role)}
+                          disabled={!canChangeRole(user.role)}
                         >
-                          Change Role
+                          {canChangeRole(user.role) ? "Change Role" : "No Permission"}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -214,16 +276,17 @@ const UserManagement = () => {
             <DialogHeader>
               <DialogTitle>Change User Role</DialogTitle>
               <DialogDescription>
-                Set a new role for this user. This will change their permissions.
+                Set a new role for {selectedUserEmail}. This will change their permissions.
               </DialogDescription>
             </DialogHeader>
             
             <div className="py-4">
-              <Select value={selectedRole} onValueChange={(value: "admin" | "user" | "blocked") => setSelectedRole(value)}>
+              <Select value={selectedRole} onValueChange={(value: "owner" | "admin" | "user" | "blocked") => setSelectedRole(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
+                  {isOwner && <SelectItem value="owner">Owner</SelectItem>}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="user">User</SelectItem>
                   <SelectItem value="blocked">Blocked</SelectItem>
