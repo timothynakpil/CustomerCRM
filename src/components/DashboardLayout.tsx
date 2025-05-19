@@ -9,10 +9,9 @@ import {
   Menu, 
   X,
   FileText,
-  Settings,
   UserCog
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -34,12 +33,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   // Get first letter for avatar with fallback
   const userInitial = userName.charAt(0).toUpperCase();
-  
-  // Check if user is admin (for conditional menu items)
-  const isAdmin = user?.user_metadata?.role === "admin";
-  
-  console.log("DashboardLayout: User metadata:", user?.user_metadata);
-  console.log("DashboardLayout: Is admin?", isAdmin);
 
   const navigationItems = [
     {
@@ -56,17 +49,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       name: "Reports",
       path: "/reports",
       icon: <FileText className="h-5 w-5" />,
-    }
-  ];
-  
-  // Add User Management for admins only
-  if (isAdmin) {
-    navigationItems.push({
+    },
+    {
       name: "User Management",
       path: "/users",
       icon: <UserCog className="h-5 w-5" />,
-    });
-  }
+    }
+  ];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -131,7 +120,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <div className="ml-3">
                 <p className="text-sm font-medium">{userName}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
-                {isAdmin && <p className="text-xs text-green-600 font-medium">Admin</p>}
+                <p className="text-xs text-green-600 font-medium">Admin</p>
               </div>
             </div>
             <Button 
