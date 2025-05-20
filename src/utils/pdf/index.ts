@@ -1,11 +1,16 @@
 
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+// We need to import jspdf-autotable properly and extend the jsPDF type
+import autoTable from "jspdf-autotable";
 import { CustomerData } from "./types";
 import { TransactionData } from "./types";
 import { addCompanyBranding, addDocumentTitle, addPageFooters } from "./pdfUtils";
 import { addCustomerDetails } from "./customerSection";
 import { addSalesSummaryTable, addDetailedTransactions } from "./transactionTables";
+
+// Add autoTable to jsPDF prototype
+// This is necessary because jspdf-autotable works by extending jsPDF's prototype
+jsPDF.API.autoTable = autoTable;
 
 /**
  * Generates a PDF report for customer sales data and triggers download

@@ -117,27 +117,25 @@ const Reports = () => {
     setIsGenerating(true);
     
     try {
-      // Generate PDF with error handling
-      setTimeout(() => {
-        const success = generateCustomerSalesPdf(customerData, reportData);
-        
-        if (success) {
-          toast({
-            title: "Success",
-            description: "Sales report PDF generated successfully",
-          });
-        } else {
-          throw new Error("PDF generation failed");
-        }
-        setIsGenerating(false);
-      }, 100);
+      // Generate PDF with better error handling
+      const success = generateCustomerSalesPdf(customerData, reportData);
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Sales report PDF generated successfully",
+        });
+      } else {
+        throw new Error("PDF generation failed");
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast({
         title: "Error",
-        description: "Failed to generate PDF",
+        description: "Failed to generate PDF. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setIsGenerating(false);
     }
   };

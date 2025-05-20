@@ -2,7 +2,8 @@
 import { jsPDF } from "jspdf";
 import { BRAND_COLORS } from "./types";
 
-// Need to extend jsPDF types for autotable
+// Correctly define the extended jsPDF interface with autoTable
+// This ensures TypeScript knows about the autoTable method
 declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;

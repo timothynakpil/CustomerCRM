@@ -1,6 +1,5 @@
-
 import { jsPDF } from "jspdf";
-import "jspdf-autotable"; // Ensure autotable is properly imported
+// Remove the direct import of jspdf-autotable since we're extending the prototype in index.ts
 import { TransactionData, BRAND_COLORS } from "./types";
 
 /**
@@ -19,12 +18,7 @@ export const addSalesSummaryTable = (doc: jsPDF, sales: TransactionData[]): numb
     `$${sale.totalAmount}`
   ]);
   
-  // Ensure the document has the autoTable method
-  if (typeof doc.autoTable !== 'function') {
-    console.error('jspdf-autotable not properly loaded');
-    return 100; // Return a default Y position to avoid errors
-  }
-  
+  // Use the autoTable method which is now available on the jsPDF instance
   doc.autoTable({
     head: [tableColumns],
     body: tableRows,
