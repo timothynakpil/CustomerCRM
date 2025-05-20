@@ -50,8 +50,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Role label color
   const getRoleBadgeColor = (role: string) => {
     switch(role) {
-      case "owner": return "text-purple-600 font-semibold";
-      case "admin": return "text-green-600 font-medium";
+      case "admin": return "text-green-600 font-semibold";
       case "user": return "text-blue-600";
       case "blocked": return "text-red-600";
       default: return "text-gray-600";
@@ -161,7 +160,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <p className="text-sm font-medium">{userName}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
                 <div className="flex items-center">
-                  {userRole === 'owner' && <Shield className="h-3 w-3 mr-1 text-purple-600" />}
+                  {userRole === 'admin' && <Shield className="h-3 w-3 mr-1 text-green-600" />}
                   <p className={`text-xs ${getRoleBadgeColor(userRole)}`}>
                     {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
                   </p>

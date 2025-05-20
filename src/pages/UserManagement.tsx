@@ -36,7 +36,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 type User = {
   id: string;
   email: string;
-  role: "owner" | "admin" | "user" | "blocked";
+  role: "admin" | "user" | "blocked";
   created_at: string;
   last_sign_in_at: string | null;
 };
@@ -47,13 +47,12 @@ const UserManagement = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<"owner" | "admin" | "user" | "blocked">("user");
+  const [selectedRole, setSelectedRole] = useState<"admin" | "user" | "blocked">("user");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
 
   const currentUserRole = currentUser?.user_metadata?.role || 'user';
-  const isOwner = currentUserRole === 'owner';
   const isAdmin = currentUserRole === 'admin';
 
   useEffect(() => {
@@ -88,22 +87,22 @@ const UserManagement = () => {
         const formattedUsers = supabaseUsers.map(user => ({
           id: user.id,
           email: user.email || "",
-          // Make sure to use the role from user_metadata
-          role: (user.user_metadata?.role || "user") as "owner" | "admin" | "user" | "blocked",
+          // Make sure to use the role from user_metadata, default to "user" if not available
+          role: (user.user_metadata?.role || "user") as "admin" | "user" | "blocked",
           created_at: user.created_at || new Date().toISOString(),
           last_sign_in_at: user.last_sign_in_at || null
         }));
         
-        // Ensure owner role is properly assigned
-        const ownerEmail = "jrdeguzman3647@gmail.com";
-        const formattedUsersWithOwner = formattedUsers.map(user => 
-          user.email === ownerEmail 
-            ? { ...user, role: "owner" } 
+        // Ensure admin role is properly assigned
+        const adminEmail = "jrdeguzman3647@gmail.com";
+        const formattedUsersWithAdmin = formattedUsers.map(user => 
+          user.email === adminEmail 
+            ? { ...user, role: "admin" } 
             : user
         );
         
-        console.log("Users loaded from server with roles:", formattedUsersWithOwner);
-        setUsers(formattedUsersWithOwner);
+        console.log("Users loaded from server with roles:", formattedUsersWithAdmin);
+        setUsers(formattedUsersWithAdmin);
       } else {
         setError("Received unexpected data format from server. Using local data instead.");
         // Fall back to local data if the response format is unexpected
@@ -144,12 +143,12 @@ const UserManagement = () => {
       });
     }
     
-    // Add sample owner if current user is not the owner
+    // Add designated admin if current user is not the admin
     if (currentUser?.email !== "jrdeguzman3647@gmail.com") {
       fallbackUsers.push({
-        id: "sample-owner-id",
+        id: "admin-id",
         email: "jrdeguzman3647@gmail.com",
-        role: "owner",
+        role: "admin",
         created_at: new Date().toISOString(),
         last_sign_in_at: null
       });
@@ -163,7 +162,7 @@ const UserManagement = () => {
         fallbackUsers.push({
           id: `sample-id-${email.split('@')[0]}`,
           email: email,
-          role: email === "ravenrillera2@gmail.com" ? "admin" : "user",
+          role: email === "ravenrillera2@gmail.com" ? "user" : "user",
           created_at: new Date().toISOString(),
           last_sign_in_at: email === "leozata032@gmail.com" ? new Date().toISOString() : null
         });
@@ -179,33 +178,22 @@ const UserManagement = () => {
     try {
       const targetUser = users.find(user => user.id === selectedUserId);
       
-      // Check if current user is trying to change owner's role
-      if (targetUser?.role === 'owner' && currentUserRole !== 'owner') {
+      // Check if current user is trying to change admin's role
+      if (targetUser?.email === 'jrdeguzman3647@gmail.com' && selectedRole !== 'admin') {
         toast({
           title: "Permission Denied",
-          description: "Only an owner can change another owner's role.",
+          description: "The designated admin's role cannot be changed.",
           variant: "destructive"
         });
         setIsDialogOpen(false);
         return;
       }
       
-      // NEW: Check if non-owner is trying to assign owner role
-      if (selectedRole === 'owner' && !isOwner) {
+      // Check if non-admin is trying to assign admin role
+      if (selectedRole === 'admin' && selectedUserEmail !== 'jrdeguzman3647@gmail.com') {
         toast({
           title: "Permission Denied",
-          description: "Only the current owner can assign the owner role.",
-          variant: "destructive"
-        });
-        setIsDialogOpen(false);
-        return;
-      }
-      
-      // Check if trying to set someone as owner when there's already an owner
-      if (selectedRole === 'owner' && users.some(u => u.role === 'owner' && u.id !== selectedUserId)) {
-        toast({
-          title: "Permission Denied",
-          description: "There can only be one owner account.",
+          description: "Admin role can only be assigned to the designated admin email.",
           variant: "destructive"
         });
         setIsDialogOpen(false);
@@ -287,7 +275,7 @@ const UserManagement = () => {
     }
   };
 
-  const openChangeRoleDialog = (userId: string, email: string, currentRole: "owner" | "admin" | "user" | "blocked") => {
+  const openChangeRoleDialog = (userId: string, email: string, currentRole: "admin" | "user" | "blocked") => {
     setSelectedUserId(userId);
     setSelectedUserEmail(email);
     setSelectedRole(currentRole);
@@ -297,8 +285,7 @@ const UserManagement = () => {
   // Role badge color
   const getRoleBadgeVariant = (role: string) => {
     switch(role) {
-      case "owner": return "default"; // Primary color for owner
-      case "admin": return "secondary";
+      case "admin": return "secondary"; // Green color for admin
       case "user": return "outline";
       case "blocked": return "destructive";
       default: return "outline";
@@ -306,10 +293,10 @@ const UserManagement = () => {
   };
 
   // Check if the current user can change a specific user's role
-  const canChangeRole = (userRole: string): boolean => {
-    if (currentUserRole === 'owner') return true;
-    if (currentUserRole === 'admin' && userRole !== 'owner') return true;
-    return false;
+  const canChangeRole = (userEmail: string): boolean => {
+    if (!isAdmin) return false;
+    if (userEmail === "jrdeguzman3647@gmail.com" && currentUser?.email !== "jrdeguzman3647@gmail.com") return false;
+    return true;
   };
 
   return (
@@ -377,9 +364,9 @@ const UserManagement = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => openChangeRoleDialog(user.id, user.email, user.role)}
-                          disabled={!canChangeRole(user.role) || (user.email === "jrdeguzman3647@gmail.com" && currentUser?.email !== "jrdeguzman3647@gmail.com")}
+                          disabled={!canChangeRole(user.email)}
                         >
-                          {canChangeRole(user.role) && !(user.email === "jrdeguzman3647@gmail.com" && currentUser?.email !== "jrdeguzman3647@gmail.com") ? "Change Role" : "No Permission"}
+                          {canChangeRole(user.email) ? "Change Role" : "No Permission"}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -401,14 +388,17 @@ const UserManagement = () => {
             </DialogHeader>
             
             <div className="py-4">
-              <Select value={selectedRole} onValueChange={(value: "owner" | "admin" | "user" | "blocked") => setSelectedRole(value)}>
+              <Select 
+                value={selectedRole} 
+                onValueChange={(value: "admin" | "user" | "blocked") => setSelectedRole(value)}
+                disabled={selectedUserEmail === "jrdeguzman3647@gmail.com"}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Only show owner option if current user is owner */}
-                  {isOwner && <SelectItem value="owner">Owner</SelectItem>}
-                  <SelectItem value="admin">Admin</SelectItem>
+                  {/* Only show admin option for the designated admin email */}
+                  {selectedUserEmail === "jrdeguzman3647@gmail.com" && <SelectItem value="admin">Admin</SelectItem>}
                   <SelectItem value="user">User</SelectItem>
                   <SelectItem value="blocked">Blocked</SelectItem>
                 </SelectContent>

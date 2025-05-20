@@ -59,10 +59,10 @@ serve(async (req) => {
       )
     }
 
-    // Validate role
-    if (!['owner', 'admin', 'user', 'blocked'].includes(role)) {
+    // Validate role - removed 'owner' from allowed roles
+    if (!['admin', 'user', 'blocked'].includes(role)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid role. Must be owner, admin, user, or blocked' }),
+        JSON.stringify({ error: 'Invalid role. Must be admin, user, or blocked' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -85,10 +85,10 @@ serve(async (req) => {
     
     const requestingUserRole = requestingUser.user_metadata?.role || 'user';
     
-    // Owner role special rules
-    if (email === "jrdeguzman3647@gmail.com" && role !== 'owner' && requestingUserEmail !== "jrdeguzman3647@gmail.com") {
+    // Admin role special rules - admin is now the highest role
+    if (email === "jrdeguzman3647@gmail.com" && role !== 'admin') {
       return new Response(
-        JSON.stringify({ error: 'The owner role cannot be changed except by the owner themselves' }),
+        JSON.stringify({ error: 'The designated admin role cannot be changed' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 403,
@@ -96,38 +96,21 @@ serve(async (req) => {
       )
     }
     
-    // If setting someone as owner
-    if (role === 'owner' && email !== "jrdeguzman3647@gmail.com") {
-      if (requestingUserRole !== 'owner') {
-        return new Response(
-          JSON.stringify({ error: 'Only the owner can assign owner status' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 403,
-          }
-        )
-      }
-      
-      // Need to demote the current owner first
-      const { data: usersData } = await adminAuthClient.auth.admin.listUsers();
-      const currentOwner = usersData?.users.find(u => 
-        u.user_metadata?.role === 'owner' && u.email !== email
-      );
-      
-      if (currentOwner) {
-        await adminAuthClient.auth.admin.updateUserById(
-          currentOwner.id,
-          { user_metadata: { role: 'admin' } }
-        );
-        
-        console.log("Demoted current owner to admin");
-      }
+    // Admin role can only be set for jrdeguzman3647@gmail.com
+    if (role === 'admin' && email !== "jrdeguzman3647@gmail.com") {
+      return new Response(
+        JSON.stringify({ error: 'Admin role can only be assigned to the designated admin email' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        }
+      )
     }
 
-    // Admin role permission check
-    if (requestingUserRole !== 'owner' && (role === 'owner' || email === "jrdeguzman3647@gmail.com")) {
+    // Only admins can change user roles
+    if (requestingUserRole !== 'admin') {
       return new Response(
-        JSON.stringify({ error: 'Only an owner can modify other owners' }),
+        JSON.stringify({ error: 'Only admins can modify user roles' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 403,
