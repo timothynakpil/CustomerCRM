@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useAuth } from "@/context/AuthContext";
 import {
   Form,
   FormControl,
@@ -24,6 +25,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Lock } from "lucide-react";
 
 // Form schema (now matches AddCustomer)
 const formSchema = z.object({
@@ -42,6 +44,24 @@ const EditCustomer = () => {
   const { id } = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCustomer, setIsLoadingCustomer] = useState(true);
+  const { user } = useAuth();
+  const [isUserBlocked, setIsUserBlocked] = useState(false);
+
+  // Check if user is blocked
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (user?.user_metadata?.role === "blocked") {
+        setIsUserBlocked(true);
+        toast({
+          title: "Access Restricted",
+          description: "Your account is blocked from making changes to customer data.",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    checkUserRole();
+  }, [user, toast]);
 
   // Initialize form with validation
   const form = useForm<FormValues>({
@@ -90,7 +110,7 @@ const EditCustomer = () => {
   }, [id, navigate, toast, form]);
 
   const onSubmit = async (data: FormValues) => {
-    if (!id) return;
+    if (!id || isUserBlocked) return;
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -140,6 +160,13 @@ const EditCustomer = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Edit Customer</h1>
+          
+          {isUserBlocked && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 flex items-center text-red-700">
+              <Lock className="mr-2 h-4 w-4" />
+              <span className="text-sm">Your account is blocked from making changes</span>
+            </div>
+          )}
         </div>
 
         <div className="bg-white p-6 rounded-md border">
@@ -164,7 +191,12 @@ const EditCustomer = () => {
                     <FormItem>
                       <FormLabel>Customer Name *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter customer name" {...field} />
+                        <Input 
+                          placeholder="Enter customer name" 
+                          {...field} 
+                          disabled={isUserBlocked}
+                          className={isUserBlocked ? "bg-gray-100" : ""}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -178,7 +210,12 @@ const EditCustomer = () => {
                     <FormItem>
                       <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter address" {...field} />
+                        <Input 
+                          placeholder="Enter address" 
+                          {...field} 
+                          disabled={isUserBlocked}
+                          className={isUserBlocked ? "bg-gray-100" : ""}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -194,10 +231,10 @@ const EditCustomer = () => {
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
-                        disabled={isLoading}
+                        disabled={isLoading || isUserBlocked}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className={isUserBlocked ? "bg-gray-100" : ""}>
                             <SelectValue placeholder="Select payment terms" />
                           </SelectTrigger>
                         </FormControl>
@@ -221,7 +258,11 @@ const EditCustomer = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || isUserBlocked}
+                  className={isUserBlocked ? "opacity-50 cursor-not-allowed" : ""}
+                >
                   {isLoading ? "Updating..." : "Update Customer"}
                 </Button>
               </div>
