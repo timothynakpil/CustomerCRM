@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -117,22 +116,43 @@ const Reports = () => {
     setIsGenerating(true);
     
     try {
-      // Generate PDF with error handling
+      // Use a small delay to allow UI to update before starting PDF generation
       setTimeout(() => {
-        const success = generateCustomerSalesPDF(customerData, reportData);
-        
-        if (success) {
+        try {
+          const limitedData = [...reportData];
+          // Limit the number of transactions to prevent browser hanging
+          if (limitedData.length > 50) {
+            limitedData.length = 50;
+            toast({
+              title: "Data Limited",
+              description: "For performance reasons, only the first 50 transactions are included in the PDF.",
+              variant: "default",
+            });
+          }
+          
+          const success = generateCustomerSalesPDF(customerData, limitedData);
+          
+          if (success) {
+            toast({
+              title: "Success",
+              description: "Sales report PDF generated successfully",
+            });
+          } else {
+            throw new Error("PDF generation failed");
+          }
+        } catch (error) {
+          console.error("Error in PDF generation:", error);
           toast({
-            title: "Success",
-            description: "Sales report PDF generated successfully",
+            title: "Error",
+            description: "Failed to generate PDF. Please try the Preview option instead.",
+            variant: "destructive",
           });
-        } else {
-          throw new Error("PDF generation failed");
+        } finally {
+          setIsGenerating(false);
         }
-        setIsGenerating(false);
       }, 100);
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error initiating PDF generation:", error);
       toast({
         title: "Error",
         description: "Failed to generate PDF",
@@ -145,16 +165,47 @@ const Reports = () => {
   const handlePreviewPDF = () => {
     if (!customerData || reportData.length === 0) return;
     
+    setIsGenerating(true);
+    
     try {
-      // Preview PDF in new tab
-      previewCustomerSalesPDF(customerData, reportData);
+      // Use a small delay to allow UI to update
+      setTimeout(() => {
+        try {
+          const limitedData = [...reportData];
+          // Limit the number of transactions for preview
+          if (limitedData.length > 30) {
+            limitedData.length = 30;
+            toast({
+              title: "Data Limited",
+              description: "For performance reasons, only the first 30 transactions are included in the preview.",
+              variant: "default",
+            });
+          }
+          
+          const success = previewCustomerSalesPDF(customerData, limitedData);
+          
+          if (!success) {
+            throw new Error("PDF preview failed");
+          }
+        } catch (error) {
+          console.error("Error in PDF preview:", error);
+          toast({
+            title: "Error",
+            description: "Failed to preview PDF",
+            variant: "destructive",
+          });
+        } finally {
+          setIsGenerating(false);
+        }
+      }, 100);
     } catch (error) {
-      console.error("Error previewing PDF:", error);
+      console.error("Error initiating PDF preview:", error);
       toast({
         title: "Error",
         description: "Failed to preview PDF",
         variant: "destructive",
       });
+      setIsGenerating(false);
     }
   };
 
