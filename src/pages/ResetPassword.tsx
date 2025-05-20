@@ -19,21 +19,36 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-
-  // Check query parameters for password reset token
+  
+  // Check if user is already logged in when arriving at reset password page
+  // This is needed to handle cases where a user clicks a reset link while logged in
   useEffect(() => {
-    const fetchSession = async () => {
+    const checkAuthAndPrepareReset = async () => {
       try {
-        // Try to extract access_token and type from hash parameters
-        const hashParams = new URLSearchParams(
-          location.hash.substring(1) // Remove the leading '#'
-        );
+        // Check if we already have a session
+        const { data: sessionData } = await supabase.auth.getSession();
         
+        if (sessionData.session) {
+          console.log("User already logged in while accessing reset password page. Signing out...");
+          // Sign out to allow password reset - this is critical to make password reset work properly
+          await supabase.auth.signOut({ scope: 'global' });
+          toast({
+            title: "Ready to reset password",
+            description: "Please enter your new password",
+          });
+        }
+        
+        // Now check for password reset token in URL
+        const hashParams = new URLSearchParams(location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
         const type = hashParams.get('type');
-
-        console.log("Reset params:", { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+        
+        console.log("Reset params detected:", { 
+          hasAccessToken: !!accessToken, 
+          hasRefreshToken: !!refreshToken, 
+          type 
+        });
         
         // If we have a token and it's for password recovery, set the session
         if (accessToken && type === 'recovery') {
@@ -43,7 +58,7 @@ const ResetPassword = () => {
           });
           
           if (error) {
-            console.error("Error setting session:", error);
+            console.error("Error setting session for password reset:", error);
             setError("Invalid or expired password reset link. Please try again.");
             toast({
               variant: "destructive",
@@ -51,24 +66,20 @@ const ResetPassword = () => {
               description: "Invalid or expired password reset link",
             });
           } else {
-            console.log("Session set successfully:", data.session);
+            console.log("Session set successfully for password reset:", data.session?.user.id);
             toast({
               title: "Ready to reset",
               description: "Please enter your new password",
             });
           }
         } else if (!accessToken) {
-          // Check if we already have a valid session
-          const { data: sessionData } = await supabase.auth.getSession();
-          
-          if (!sessionData.session) {
-            setError("No valid reset token found. Please request a new password reset.");
-            toast({
-              variant: "destructive",
-              title: "Invalid reset link",
-              description: "No valid reset token found. Please request a new password reset.",
-            });
-          }
+          // No access token in URL and no session - invalid state
+          setError("No valid reset token found. Please request a new password reset.");
+          toast({
+            variant: "destructive",
+            title: "Invalid reset link",
+            description: "No valid reset token found. Please request a new password reset.",
+          });
         }
         
         setHasSessionChecked(true);
@@ -84,7 +95,7 @@ const ResetPassword = () => {
       }
     };
 
-    fetchSession();
+    checkAuthAndPrepareReset();
   }, [location, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {

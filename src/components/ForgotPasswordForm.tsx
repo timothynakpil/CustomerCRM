@@ -44,6 +44,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
       const baseUrl = window.location.origin;
       
       // Send password reset email with the correct redirect URL
+      // Make sure we redirect to the reset-password page and not dashboard
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${baseUrl}/reset-password`,
       });

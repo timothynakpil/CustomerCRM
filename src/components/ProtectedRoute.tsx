@@ -9,7 +9,7 @@ const ProtectedRoute = () => {
   const { toast } = useToast();
   const location = useLocation();
 
-  console.log("ProtectedRoute - loading:", loading, "isAuthenticated:", isAuthenticated);
+  console.log("ProtectedRoute - loading:", loading, "isAuthenticated:", isAuthenticated, "path:", location.pathname);
 
   // Check if this is a password reset route which doesn't need authentication
   const isPasswordResetRoute = location.pathname === "/reset-password";
@@ -48,6 +48,14 @@ const ProtectedRoute = () => {
 
   // Allow access to password reset route without authentication
   if (isPasswordResetRoute) {
+    // For reset-password route, allow access without authentication
+    // Important: Remove any existing authenticated session when on reset-password route
+    // to prevent auto-redirect to dashboard
+    if (isAuthenticated) {
+      console.log("On reset-password route while authenticated - signing out to allow password reset");
+      // We don't immediately sign out here as it would cause issues with the auth flow
+      // Instead, ResetPassword component will handle this situation
+    }
     return <Outlet />;
   }
 
