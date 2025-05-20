@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,26 +14,78 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [hasSessionChecked, setHasSessionChecked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
-  // Check if we have a session with recovery email
+  // Check query parameters for password reset token
   useEffect(() => {
-    const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        // No active session, redirect to login
+    const fetchSession = async () => {
+      try {
+        // Try to extract access_token and type from hash parameters
+        const hashParams = new URLSearchParams(
+          location.hash.substring(1) // Remove the leading '#'
+        );
+        
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
+
+        console.log("Reset params:", { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+        
+        // If we have a token and it's for password recovery, set the session
+        if (accessToken && type === 'recovery') {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          
+          if (error) {
+            console.error("Error setting session:", error);
+            setError("Invalid or expired password reset link. Please try again.");
+            toast({
+              variant: "destructive",
+              title: "Session error",
+              description: "Invalid or expired password reset link",
+            });
+          } else {
+            console.log("Session set successfully:", data.session);
+            toast({
+              title: "Ready to reset",
+              description: "Please enter your new password",
+            });
+          }
+        } else if (!accessToken) {
+          // Check if we already have a valid session
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          if (!sessionData.session) {
+            setError("No valid reset token found. Please request a new password reset.");
+            toast({
+              variant: "destructive",
+              title: "Invalid reset link",
+              description: "No valid reset token found. Please request a new password reset.",
+            });
+          }
+        }
+        
+        setHasSessionChecked(true);
+      } catch (err) {
+        console.error("Error processing reset token:", err);
+        setError("An error occurred while processing your password reset request.");
+        setHasSessionChecked(true);
         toast({
           variant: "destructive",
-          title: "Session expired",
-          description: "Your password reset session has expired. Please try again.",
+          title: "Error",
+          description: "There was a problem processing your password reset request",
         });
-        navigate("/login");
       }
     };
 
-    checkSession();
-  }, [navigate, toast]);
+    fetchSession();
+  }, [location, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +130,9 @@ const ResetPassword = () => {
         description: "Your password has been successfully updated",
       });
       
+      // Sign out after successful password reset
+      await supabase.auth.signOut();
+      
       // Redirect after a short delay
       setTimeout(() => {
         navigate("/login");
@@ -93,6 +148,57 @@ const ResetPassword = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking the session
+  if (!hasSessionChecked) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Verifying your password reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If there's an error with the reset link
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md">
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold text-primary">CustomerCRM</h1>
+            <p className="mt-2 text-gray-600">Product Management System</p>
+          </div>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Password Reset Error</CardTitle>
+              <CardDescription>
+                There was a problem with your password reset link
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-6">
+              <div className="bg-red-50 p-3 rounded-full inline-block mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-gray-700 mb-4">{error}</p>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                className="w-full"
+                onClick={() => navigate("/login")}
+              >
+                Back to Login
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">

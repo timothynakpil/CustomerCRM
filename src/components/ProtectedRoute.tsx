@@ -11,6 +11,9 @@ const ProtectedRoute = () => {
 
   console.log("ProtectedRoute - loading:", loading, "isAuthenticated:", isAuthenticated);
 
+  // Check if this is a password reset route which doesn't need authentication
+  const isPasswordResetRoute = location.pathname === "/reset-password";
+
   // Check if user is the designated admin
   useEffect(() => {
     if (user && user.email === "jrdeguzman3647@gmail.com" && user.user_metadata?.role !== "admin") {
@@ -41,6 +44,11 @@ const ProtectedRoute = () => {
         <p>Loading authentication status...</p>
       </div>
     );
+  }
+
+  // Allow access to password reset route without authentication
+  if (isPasswordResetRoute) {
+    return <Outlet />;
   }
 
   if (!isAuthenticated) {

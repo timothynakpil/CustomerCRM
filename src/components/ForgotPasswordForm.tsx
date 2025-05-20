@@ -40,9 +40,12 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
     
     try {
-      // Send password reset email
+      // Get the base URL of the application
+      const baseUrl = window.location.origin;
+      
+      // Send password reset email with the correct redirect URL
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${baseUrl}/reset-password`,
       });
       
       if (error) throw error;
@@ -52,6 +55,8 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
         title: "Reset email sent",
         description: "Check your email for the password reset link",
       });
+      
+      console.log(`Reset email sent. Redirect URL: ${baseUrl}/reset-password`);
     } catch (error: any) {
       console.error("Error sending reset:", error);
       toast({
