@@ -1,5 +1,5 @@
 
-import { Download, FileText } from "lucide-react";
+import { FileText, Eye } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -73,8 +73,8 @@ const ReportPreview = ({
             disabled={disableDownload}
             className="bg-primary hover:bg-primary/80"
           >
-            <Download className="mr-2" size={16} />
-            Download PDF
+            <Eye className="mr-2" size={16} />
+            Preview PDF
           </Button>
         )}
       </CardFooter>

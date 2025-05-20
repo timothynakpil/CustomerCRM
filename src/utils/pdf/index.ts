@@ -10,6 +10,7 @@ import { addSalesSummaryTable, addDetailedTransactions } from "./transactionTabl
 
 // Add autoTable to jsPDF prototype
 // This is necessary because jspdf-autotable works by extending jsPDF's prototype
+// @ts-ignore - we know this exists at runtime even though TypeScript doesn't recognize it
 jsPDF.API.autoTable = autoTable;
 
 /**

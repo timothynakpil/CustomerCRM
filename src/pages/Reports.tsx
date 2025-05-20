@@ -15,7 +15,7 @@ import {
   CustomerBasic,
   ProcessedTransaction
 } from "@/services/reportService";
-import { generateCustomerSalesPdf } from "@/utils/pdf";
+import { previewCustomerSalesPdf } from "@/utils/pdf";
 import { CustomerData } from "@/utils/pdf/types";
 
 const Reports = () => {
@@ -96,7 +96,7 @@ const Reports = () => {
       
       toast({
         title: "Success",
-        description: "Report data loaded successfully. Click 'Download PDF' to generate the report.",
+        description: "Report data loaded successfully. Click 'Preview PDF' to view the report.",
       });
       
     } catch (error) {
@@ -111,28 +111,28 @@ const Reports = () => {
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handlePreviewPDF = () => {
     if (!customerData || reportData.length === 0) return;
     
     setIsGenerating(true);
     
     try {
-      // Generate PDF with better error handling
-      const success = generateCustomerSalesPdf(customerData, reportData);
+      // Generate PDF preview
+      const success = previewCustomerSalesPdf(customerData, reportData);
       
       if (success) {
         toast({
           title: "Success",
-          description: "Sales report PDF generated successfully",
+          description: "Sales report PDF opened in a new tab",
         });
       } else {
-        throw new Error("PDF generation failed");
+        throw new Error("PDF preview failed");
       }
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error previewing PDF:", error);
       toast({
         title: "Error",
-        description: "Failed to generate PDF. Please try again.",
+        description: "Failed to open PDF preview. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -164,7 +164,7 @@ const Reports = () => {
               <ReportPreview 
                 reportData={reportData}
                 customerData={customerData}
-                onDownload={handleDownloadPDF}
+                onDownload={handlePreviewPDF}
                 disableDownload={isGenerating || !isReportReady}
               />
             </div>
