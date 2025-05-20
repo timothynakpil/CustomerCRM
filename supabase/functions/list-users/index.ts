@@ -62,18 +62,24 @@ serve(async (req) => {
     }
 
     // Transform the users data to include only necessary information
+    // Make sure to preserve the role information from user_metadata
     let usersData = data.users.map(user => ({
       id: user.id,
       email: user.email,
       role: user.user_metadata?.role || 'user',
       created_at: user.created_at,
-      last_sign_in_at: user.last_sign_in_at
+      last_sign_in_at: user.last_sign_in_at,
+      user_metadata: user.user_metadata  // Include full metadata for debugging
     }));
 
     // Always ensure "jrdeguzman3647@gmail.com" is marked as owner
     usersData = usersData.map(user => {
-      if (user.email === 'jrdeguzman3647@gmail.com' && user.role !== 'owner') {
-        return { ...user, role: 'owner' };
+      if (user.email === 'jrdeguzman3647@gmail.com') {
+        return { 
+          ...user, 
+          role: 'owner',
+          user_metadata: { ...user.user_metadata, role: 'owner' }
+        };
       }
       return user;
     });

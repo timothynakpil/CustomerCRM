@@ -84,15 +84,26 @@ const UserManagement = () => {
       }
       
       if (supabaseUsers && Array.isArray(supabaseUsers)) {
+        // Process users to ensure we have correct role information
         const formattedUsers = supabaseUsers.map(user => ({
           id: user.id,
           email: user.email || "",
+          // Make sure to use the role from user_metadata
           role: (user.user_metadata?.role || "user") as "owner" | "admin" | "user" | "blocked",
           created_at: user.created_at || new Date().toISOString(),
           last_sign_in_at: user.last_sign_in_at || null
         }));
         
-        setUsers(formattedUsers);
+        // Ensure owner role is properly assigned
+        const ownerEmail = "jrdeguzman3647@gmail.com";
+        const formattedUsersWithOwner = formattedUsers.map(user => 
+          user.email === ownerEmail 
+            ? { ...user, role: "owner" } 
+            : user
+        );
+        
+        console.log("Users loaded from server with roles:", formattedUsersWithOwner);
+        setUsers(formattedUsersWithOwner);
       } else {
         setError("Received unexpected data format from server. Using local data instead.");
         // Fall back to local data if the response format is unexpected
@@ -173,6 +184,17 @@ const UserManagement = () => {
         toast({
           title: "Permission Denied",
           description: "Only an owner can change another owner's role.",
+          variant: "destructive"
+        });
+        setIsDialogOpen(false);
+        return;
+      }
+      
+      // NEW: Check if non-owner is trying to assign owner role
+      if (selectedRole === 'owner' && !isOwner) {
+        toast({
+          title: "Permission Denied",
+          description: "Only the current owner can assign the owner role.",
           variant: "destructive"
         });
         setIsDialogOpen(false);
@@ -384,6 +406,7 @@ const UserManagement = () => {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Only show owner option if current user is owner */}
                   {isOwner && <SelectItem value="owner">Owner</SelectItem>}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="user">User</SelectItem>
