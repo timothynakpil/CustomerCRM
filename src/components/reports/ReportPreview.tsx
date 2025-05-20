@@ -1,5 +1,5 @@
 
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Eye } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -16,6 +16,7 @@ interface ReportPreviewProps {
   reportData: ProcessedTransaction[];
   customerData: CustomerData | null;
   onDownload: () => void;
+  onPreview?: () => void;
   disableDownload: boolean;
 }
 
@@ -23,6 +24,7 @@ const ReportPreview = ({
   reportData, 
   customerData, 
   onDownload,
+  onPreview,
   disableDownload 
 }: ReportPreviewProps) => {
   return (
@@ -63,19 +65,32 @@ const ReportPreview = ({
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
+      <CardFooter className="flex flex-wrap justify-between items-center gap-2">
         <div className="text-sm text-gray-500">
           The PDF report will include detailed product information for each transaction.
         </div>
         {reportData.length > 0 && (
-          <Button 
-            onClick={onDownload} 
-            disabled={disableDownload}
-            className="bg-primary hover:bg-primary/80"
-          >
-            <Download className="mr-2" size={16} />
-            Download PDF
-          </Button>
+          <div className="flex gap-2">
+            {onPreview && (
+              <Button 
+                onClick={onPreview}
+                variant="outline"
+                disabled={disableDownload}
+                className="flex items-center"
+              >
+                <Eye className="mr-2" size={16} />
+                Preview
+              </Button>
+            )}
+            <Button 
+              onClick={onDownload} 
+              disabled={disableDownload}
+              className="bg-primary hover:bg-primary/80"
+            >
+              <Download className="mr-2" size={16} />
+              Download PDF
+            </Button>
+          </div>
         )}
       </CardFooter>
     </Card>

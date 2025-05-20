@@ -15,7 +15,7 @@ import {
   CustomerBasic,
   ProcessedTransaction
 } from "@/services/reportService";
-import { generateCustomerSalesPDF } from "@/utils/pdf";
+import { generateCustomerSalesPDF, previewCustomerSalesPDF } from "@/utils/pdf";
 import { CustomerData } from "@/utils/pdf/types";
 
 const Reports = () => {
@@ -117,17 +117,20 @@ const Reports = () => {
     setIsGenerating(true);
     
     try {
-      // Generate PDF
-      const success = generateCustomerSalesPDF(customerData, reportData);
-      
-      if (success) {
-        toast({
-          title: "Success",
-          description: "Sales report PDF generated successfully",
-        });
-      } else {
-        throw new Error("PDF generation failed");
-      }
+      // Generate PDF with error handling
+      setTimeout(() => {
+        const success = generateCustomerSalesPDF(customerData, reportData);
+        
+        if (success) {
+          toast({
+            title: "Success",
+            description: "Sales report PDF generated successfully",
+          });
+        } else {
+          throw new Error("PDF generation failed");
+        }
+        setIsGenerating(false);
+      }, 100);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast({
@@ -135,8 +138,23 @@ const Reports = () => {
         description: "Failed to generate PDF",
         variant: "destructive",
       });
-    } finally {
       setIsGenerating(false);
+    }
+  };
+  
+  const handlePreviewPDF = () => {
+    if (!customerData || reportData.length === 0) return;
+    
+    try {
+      // Preview PDF in new tab
+      previewCustomerSalesPDF(customerData, reportData);
+    } catch (error) {
+      console.error("Error previewing PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to preview PDF",
+        variant: "destructive",
+      });
     }
   };
 
@@ -165,6 +183,7 @@ const Reports = () => {
                 reportData={reportData}
                 customerData={customerData}
                 onDownload={handleDownloadPDF}
+                onPreview={handlePreviewPDF}
                 disableDownload={isGenerating || !isReportReady}
               />
             </div>

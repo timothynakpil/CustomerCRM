@@ -1,6 +1,6 @@
 
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import "jspdf-autotable"; // Ensure autotable is properly imported
 import { TransactionData, BRAND_COLORS } from "./types";
 
 /**
@@ -18,6 +18,12 @@ export const addSalesSummaryTable = (doc: jsPDF, sales: TransactionData[]): numb
     sale.employee,
     `$${sale.totalAmount}`
   ]);
+  
+  // Ensure the document has the autoTable method
+  if (typeof doc.autoTable !== 'function') {
+    console.error('jspdf-autotable not properly loaded');
+    return 100; // Return a default Y position to avoid errors
+  }
   
   doc.autoTable({
     head: [tableColumns],
@@ -58,7 +64,12 @@ export const addDetailedTransactions = (doc: jsPDF, sales: TransactionData[], st
   doc.text("Transaction Details", 14, yPos);
   yPos += 10;
   
-  sales.forEach((sale, index) => {
+  // Ensure we don't process too many transactions that might cause performance issues
+  const maxTransactionsToShow = Math.min(sales.length, 50); // Limit to 50 transactions
+  
+  for (let i = 0; i < maxTransactionsToShow; i++) {
+    const sale = sales[i];
+    
     // Check if we need a new page
     if (yPos > 250) {
       doc.addPage();
@@ -75,14 +86,23 @@ export const addDetailedTransactions = (doc: jsPDF, sales: TransactionData[], st
     doc.text(`Transaction #${sale.transno} - ${sale.date}`, 16, yPos);
     yPos += 8;
     
+    // Ensure we have transaction details before trying to render them
+    if (!sale.details || sale.details.length === 0) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "italic");
+      doc.text("No transaction details available", 14, yPos + 5);
+      yPos += 15;
+      continue;
+    }
+    
     const detailColumns = ["Product", "Description", "Quantity", "Unit Price", "Subtotal"];
     const detailRows = sale.details.map((detail) => {
       const price = detail.pricehist?.unitprice || 0;
       const quantity = detail.quantity || 0;
-      const subtotal = detail.subtotal;
+      const subtotal = detail.subtotal || 0;
       
       return [
-        detail.prodcode,
+        detail.prodcode || 'N/A',
         detail.product?.description || 'N/A',
         quantity.toString(),
         `$${price.toFixed(2)}`,
@@ -109,6 +129,13 @@ export const addDetailedTransactions = (doc: jsPDF, sales: TransactionData[], st
       }
     });
     
-    yPos = doc.lastAutoTable.finalY + (index < sales.length - 1 ? 20 : 5);
-  });
+    yPos = doc.lastAutoTable.finalY + (i < maxTransactionsToShow - 1 ? 20 : 5);
+  }
+  
+  // If there are more transactions than shown, add a note
+  if (sales.length > maxTransactionsToShow) {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text(`Note: Only showing ${maxTransactionsToShow} of ${sales.length} transactions in this report.`, 14, yPos + 10);
+  }
 }
