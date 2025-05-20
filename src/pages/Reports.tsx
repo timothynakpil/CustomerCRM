@@ -15,7 +15,7 @@ import {
   CustomerBasic,
   ProcessedTransaction
 } from "@/services/reportService";
-import { generateCustomerSalesPDF, previewCustomerSalesPDF } from "@/utils/pdf";
+import { generateCustomerSalesPdf } from "@/utils/pdf";
 import { CustomerData } from "@/utils/pdf/types";
 
 const Reports = () => {
@@ -119,7 +119,7 @@ const Reports = () => {
     try {
       // Generate PDF with error handling
       setTimeout(() => {
-        const success = generateCustomerSalesPDF(customerData, reportData);
+        const success = generateCustomerSalesPdf(customerData, reportData);
         
         if (success) {
           toast({
@@ -139,22 +139,6 @@ const Reports = () => {
         variant: "destructive",
       });
       setIsGenerating(false);
-    }
-  };
-  
-  const handlePreviewPDF = () => {
-    if (!customerData || reportData.length === 0) return;
-    
-    try {
-      // Preview PDF in new tab
-      previewCustomerSalesPDF(customerData, reportData);
-    } catch (error) {
-      console.error("Error previewing PDF:", error);
-      toast({
-        title: "Error",
-        description: "Failed to preview PDF",
-        variant: "destructive",
-      });
     }
   };
 
@@ -183,7 +167,6 @@ const Reports = () => {
                 reportData={reportData}
                 customerData={customerData}
                 onDownload={handleDownloadPDF}
-                onPreview={handlePreviewPDF}
                 disableDownload={isGenerating || !isReportReady}
               />
             </div>
