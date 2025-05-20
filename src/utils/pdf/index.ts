@@ -21,7 +21,7 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
     addDocumentTitle(doc, "Customer Sales Report");
     
     // Add customer details section
-    addCustomerDetails(doc, customer, sales);
+    addCustomerDetails(doc, customer);
     
     // Add sales summary table
     const nextYPosition = addSalesSummaryTable(doc, sales);
@@ -58,7 +58,7 @@ export const previewCustomerSalesPDF = (customer: CustomerData, sales: Transacti
     addDocumentTitle(doc, "Customer Sales Report");
     
     // Add customer details section
-    addCustomerDetails(doc, customer, sales);
+    addCustomerDetails(doc, customer);
     
     // Add sales summary table
     const nextYPosition = addSalesSummaryTable(doc, sales);

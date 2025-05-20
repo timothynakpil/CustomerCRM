@@ -10,9 +10,10 @@ import {
   X,
   FileText,
   UserCog,
-  Shield
+  Shield,
+  AlertCircle
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -24,6 +25,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  useEffect(() => {
+    if (user?.user_metadata?.role === 'blocked') {
+      setIsBlocked(true);
+    } else {
+      setIsBlocked(false);
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -53,23 +63,32 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       name: "Dashboard",
       path: "/dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
+      showWhenBlocked: true
     },
     {
       name: "Customers",
       path: "/customers",
       icon: <Users className="h-5 w-5" />,
+      showWhenBlocked: true
     },
     {
       name: "Reports",
       path: "/reports",
       icon: <FileText className="h-5 w-5" />,
+      showWhenBlocked: false
     },
     {
       name: "User Management",
       path: "/users",
       icon: <UserCog className="h-5 w-5" />,
+      showWhenBlocked: true
     }
   ];
+
+  // Filter navigation items based on user role
+  const filteredNavItems = navigationItems.filter(item => 
+    !isBlocked || item.showWhenBlocked
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -107,8 +126,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </Link>
           </div>
           
+          {isBlocked && (
+            <div className="mx-4 my-2 p-3 bg-red-50 border border-red-100 rounded-md flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
+              <span className="text-sm text-red-700">Your account is currently restricted</span>
+            </div>
+          )}
+          
           <div className="flex flex-col flex-grow p-4 space-y-1">
-            {navigationItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
