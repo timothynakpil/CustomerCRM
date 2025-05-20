@@ -30,6 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type User = {
   id: string;
@@ -42,6 +44,7 @@ type User = {
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<"owner" | "admin" | "user" | "blocked">("user");
@@ -60,12 +63,14 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // First try to fetch users from Supabase Edge Function
       const { data: supabaseUsers, error } = await supabase.functions.invoke('list-users');
       
       if (error) {
         console.error("Error fetching users:", error);
+        setError("Failed to fetch users from the server. Using local data instead.");
         toast({
           title: "Error fetching users",
           description: "Could not load users from the server. Using local data instead.",
@@ -89,12 +94,14 @@ const UserManagement = () => {
         
         setUsers(formattedUsers);
       } else {
+        setError("Received unexpected data format from server. Using local data instead.");
         // Fall back to local data if the response format is unexpected
         const fallbackData = getFallbackUsers();
         setUsers(fallbackData);
       }
     } catch (error) {
       console.error("Error in fetchUsers:", error);
+      setError("An error occurred while fetching users. Using local data instead.");
       
       // Fall back to local data if there's any error
       const fallbackData = getFallbackUsers();
@@ -292,6 +299,14 @@ const UserManagement = () => {
             Refresh Users
           </Button>
         </div>
+        
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <div className="bg-white rounded-md border shadow">
           {loading ? (
@@ -340,7 +355,7 @@ const UserManagement = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => openChangeRoleDialog(user.id, user.email, user.role)}
-                          disabled={!canChangeRole(user.role) || user.email === "jrdeguzman3647@gmail.com" && currentUserEmail !== "jrdeguzman3647@gmail.com"}
+                          disabled={!canChangeRole(user.role) || (user.email === "jrdeguzman3647@gmail.com" && currentUser?.email !== "jrdeguzman3647@gmail.com")}
                         >
                           {canChangeRole(user.role) && !(user.email === "jrdeguzman3647@gmail.com" && currentUser?.email !== "jrdeguzman3647@gmail.com") ? "Change Role" : "No Permission"}
                         </Button>

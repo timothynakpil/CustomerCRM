@@ -23,6 +23,7 @@ const ProtectedRoute = () => {
             role: "owner" // Ensure owner has owner role
           };
           localStorage.setItem('sb-avocdhvgtmkguyboohkc-auth-token', JSON.stringify(session));
+          console.log("Updated owner role in localStorage");
           
           // Force page reload to update the user object with new role
           window.location.reload();

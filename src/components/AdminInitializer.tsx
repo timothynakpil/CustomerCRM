@@ -59,6 +59,7 @@ const AdminInitializer = () => {
                 requestingUserEmail: user.email
               })
             });
+            console.log("Owner role updated on server");
           } catch (error) {
             console.error("Failed to update owner role on server:", error);
             // Continue anyway since we updated locally

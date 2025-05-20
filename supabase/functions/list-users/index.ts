@@ -43,14 +43,17 @@ serve(async (req) => {
       )
     }
 
+    // Get the user's current role
+    const userRole = authenticatedUser.user_metadata?.role || 'user';
+    console.log("User role:", userRole);
+
     // Create admin auth client for accessing user data
     const adminAuthClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch all users through Admin API (regardless of the requesting user's role)
-    // All authenticated users can see the list, but actions will be limited by role
+    // Fetch all users through Admin API
     const { data, error } = await adminAuthClient.auth.admin.listUsers()
 
     if (error) {
@@ -59,7 +62,7 @@ serve(async (req) => {
     }
 
     // Transform the users data to include only necessary information
-    const usersData = data.users.map(user => ({
+    let usersData = data.users.map(user => ({
       id: user.id,
       email: user.email,
       role: user.user_metadata?.role || 'user',
@@ -68,17 +71,17 @@ serve(async (req) => {
     }));
 
     // Always ensure "jrdeguzman3647@gmail.com" is marked as owner
-    const finalUsersData = usersData.map(user => {
+    usersData = usersData.map(user => {
       if (user.email === 'jrdeguzman3647@gmail.com' && user.role !== 'owner') {
         return { ...user, role: 'owner' };
       }
       return user;
     });
 
-    console.log(`Successfully retrieved ${finalUsersData.length} users`);
+    console.log(`Successfully retrieved ${usersData.length} users`);
 
     return new Response(
-      JSON.stringify(finalUsersData),
+      JSON.stringify(usersData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
