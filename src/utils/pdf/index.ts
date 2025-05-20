@@ -1,7 +1,6 @@
 
 import { jsPDF } from "jspdf";
-// Import autoTable as a type and global extension
-import "jspdf-autotable";
+import "jspdf-autotable"; // Ensure autotable is properly imported
 import { CustomerData, TransactionData } from "./types";
 import { addCompanyBranding, addDocumentTitle, addPageFooters } from "./pdfUtils";
 import { addCustomerDetails } from "./customerSection";
@@ -12,14 +11,8 @@ import { addSalesSummaryTable, addDetailedTransactions } from "./transactionTabl
  */
 export const generateCustomerSalesPDF = (customer: CustomerData, sales: TransactionData[]) => {
   try {
-    // Create PDF document with proper initialization
+    // Create PDF document
     const doc = new jsPDF();
-    
-    // Validate that autoTable is available
-    if (typeof (doc as any).autoTable !== 'function') {
-      console.error("jsPDF-AutoTable not properly loaded");
-      throw new Error("PDF generation failed - missing required plugin");
-    }
     
     // Add company branding
     addCompanyBranding(doc);
@@ -30,7 +23,7 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
     // Add customer details section
     addCustomerDetails(doc, customer, sales);
     
-    // Add sales summary table with error handling
+    // Add sales summary table
     const nextYPosition = addSalesSummaryTable(doc, sales);
     
     // Add detailed transactions
@@ -41,8 +34,7 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
     
     // Save the PDF with a proper filename (sanitize customer number to avoid invalid characters)
     const safeCustNo = customer.custno.replace(/[^a-z0-9]/gi, '_');
-    const fileName = `${safeCustNo}_Sales_Report_${new Date().toISOString().slice(0,10)}.pdf`;
-    doc.save(fileName);
+    doc.save(`${safeCustNo}_Sales_Report.pdf`);
     
     return true;
   } catch (error) {
@@ -56,14 +48,8 @@ export const generateCustomerSalesPDF = (customer: CustomerData, sales: Transact
  */
 export const previewCustomerSalesPDF = (customer: CustomerData, sales: TransactionData[]) => {
   try {
-    // Create PDF document with proper initialization
+    // Create PDF document
     const doc = new jsPDF();
-    
-    // Validate that autoTable is available
-    if (typeof (doc as any).autoTable !== 'function') {
-      console.error("jsPDF-AutoTable not properly loaded");
-      throw new Error("PDF generation failed - missing required plugin");
-    }
     
     // Add company branding
     addCompanyBranding(doc);
@@ -74,7 +60,7 @@ export const previewCustomerSalesPDF = (customer: CustomerData, sales: Transacti
     // Add customer details section
     addCustomerDetails(doc, customer, sales);
     
-    // Add sales summary table with error handling
+    // Add sales summary table
     const nextYPosition = addSalesSummaryTable(doc, sales);
     
     // Add detailed transactions

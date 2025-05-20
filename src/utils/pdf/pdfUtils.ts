@@ -2,8 +2,8 @@
 import { jsPDF } from "jspdf";
 import { BRAND_COLORS } from "./types";
 
-// Update the declaration to make TypeScript happy
-declare global {
+// Need to extend jsPDF types for autotable
+declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
     lastAutoTable: {
